@@ -1,11 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
-import { COLORS } from '../constants/theme'; // Importando as cores que você já tem
+import { COLORS } from '../constants/theme';
 
 export default function HomeScreen() {
+  const [bpm, setBpm] = useState(85);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const variacao = Math.floor(Math.random() * 5) - 2;
+      setBpm(prev => {
+        const novoValor = prev + variacao;
+        return (novoValor > 60 && novoValor < 140) ? novoValor : prev;
+      });
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/* Barra de status clara no fundo escuro */}
       <StatusBar barStyle="light-content" />
       
       <Text style={styles.headerTitle}>PetMonitor🐾</Text>
@@ -13,17 +25,21 @@ export default function HomeScreen() {
       <View style={styles.monitorArea}>
         <Text style={styles.label}>Batimentos Cardíacos</Text>
         
-        {/* Círculo do Monitor */}
         <View style={styles.bpmCircle}>
-          {/* Por enquanto é um número fixo, depois ligamos o ESP32 */}
-          <Text style={styles.bpmNumber}>85</Text>
+          <Text style={styles.bpmNumber}>{bpm}</Text>
           <Text style={styles.bpmUnit}>BPM</Text>
         </View>
 
-        {/* Card de Status */}
         <View style={styles.statusCard}>
           <Text style={{ color: COLORS.textSecondary }}>Status do Pet: </Text>
-          <Text style={styles.statusValue}>Estável</Text>
+          <Text style={[styles.statusValue, { color: bpm > 120 ? '#FF5252' : COLORS.success }]}>
+            {bpm > 120 ? 'Agitado' : 'Estável'}
+          </Text>
+        </View>
+
+        {/* O botão de conexão que você tinha no App.js, agora aqui dentro */}
+        <View style={styles.connectionCard}>
+          <Text style={styles.connectionText}>● Conectado ao ESP32</Text>
         </View>
       </View>
     </View>
@@ -33,21 +49,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background, // Usa o fundo escuro
+    backgroundColor: COLORS.background,
   },
   headerTitle: {
     color: COLORS.text,
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 60, // Dá espaço da barra do iPhone/Android
-    marginBottom: 20,
+    marginTop: 60,
   },
   monitorArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 50, // Ajuste visual
   },
   label: {
     color: COLORS.textSecondary,
@@ -57,19 +71,18 @@ const styles = StyleSheet.create({
   bpmCircle: {
     width: 220,
     height: 220,
-    borderRadius: 110, // Metade para ficar círculo
+    borderRadius: 110,
     borderWidth: 10,
-    borderColor: COLORS.primary, // Círculo Azul
+    borderColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface, // Fundo levemente diferente dentro
+    backgroundColor: COLORS.surface,
     marginBottom: 40,
-    // Sombra (Efeito visual)
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 15,
-    elevation: 10, // Sombra no Android
+    elevation: 10,
   },
   bpmNumber: {
     color: COLORS.text,
@@ -83,18 +96,27 @@ const styles = StyleSheet.create({
   statusCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    paddingVertical: 15,
-    paddingHorizontal: 25,
+    padding: 15,
     borderRadius: 12,
     width: '85%',
     justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.surface, // Borda quase invisível
+    marginBottom: 20,
   },
   statusValue: {
-    color: COLORS.success, // Verde
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  connectionCard: {
+    backgroundColor: COLORS.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  connectionText: {
+    color: COLORS.success,
+    fontSize: 14,
+    fontWeight: 'bold',
   }
 });
