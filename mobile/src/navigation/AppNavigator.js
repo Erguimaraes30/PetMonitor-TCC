@@ -1,0 +1,20 @@
+import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import RegisterTutor from '../screens/RegisterTutor';
+import RegisterPet from '../screens/RegisterPet';
+import RegisterVet from '../screens/RegisterVet';
+import Tabs from './Tabs';
+
+const Stack = createNativeStackNavigator();
+
+export default function AppNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="RegisterTutor" component={RegisterTutor} />
+      <Stack.Screen name="RegisterPet" component={RegisterPet} />
+      <Stack.Screen name="RegisterVet" component={RegisterVet} />
+      <Stack.Screen name="MainApp" component={Tabs} />
+    </Stack.Navigator>
+  );
+}

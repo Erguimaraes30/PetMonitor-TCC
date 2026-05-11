@@ -1,0 +1,221 @@
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, StatusBar, ScrollView,
+  TouchableOpacity, Switch
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { COLORS, SIZES } from '../constants/theme';
+
+export default function PerfilScreen({ navigation }) {
+  const [bpmMin, setBpmMin] = useState(60);
+  const [bpmMax, setBpmMax] = useState(140);
+  const [emailAlertas, setEmailAlertas] = useState(true);
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.avatar}>
+            <Feather name="user" size={18} color={COLORS.primary} />
+          </View>
+          <Text style={styles.petName}>Max</Text>
+          <Text style={styles.headerTitle}>Perfil e Configurações</Text>
+        </View>
+        <TouchableOpacity>
+          <Feather name="more-vertical" size={22} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Dados do Tutor */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>DADOS DO TUTOR</Text>
+            <TouchableOpacity>
+              <Feather name="edit-2" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
+            <Text style={styles.fieldValue}>Ricardo Silveira</Text>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>CONTATO</Text>
+            <Text style={styles.fieldValue}>+55 11 98877-6655</Text>
+          </View>
+        </View>
+
+        {/* Dados do Pet */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>DADOS DO PET</Text>
+            <TouchableOpacity>
+              <Feather name="edit-2" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.petRow}>
+            <View style={styles.petAvatar}>
+              <Feather name="github" size={24} color={COLORS.primary} />
+            </View>
+            <View>
+              <Text style={styles.petName2}>Max</Text>
+              <Text style={styles.petBreed}>Golden Retriever • 4 anos</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Limites de Alerta */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.limiteTitleRow}>
+              <Feather name="bar-chart-2" size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.cardLabel}>LIMITES DE ALERTA (BPM)</Text>
+            </View>
+          </View>
+
+          {/* BPM Mínimo */}
+          <View style={styles.limiteRow}>
+            <View style={styles.limiteInfo}>
+              <Text style={styles.limiteTitle}>BPM Mínimo</Text>
+              <Text style={styles.limiteSubtitle}>Alerta abaixo deste valor</Text>
+            </View>
+            <View style={styles.counter}>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setBpmMin(v => Math.max(40, v - 1))}
+              >
+                <Text style={styles.counterBtnText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>{bpmMin}</Text>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setBpmMin(v => Math.min(bpmMax - 1, v + 1))}
+              >
+                <Text style={styles.counterBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* BPM Máximo */}
+          <View style={styles.limiteRow}>
+            <View style={styles.limiteInfo}>
+              <Text style={styles.limiteTitle}>BPM Máximo</Text>
+              <Text style={styles.limiteSubtitle}>Alerta acima deste valor</Text>
+            </View>
+            <View style={styles.counter}>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setBpmMax(v => Math.max(bpmMin + 1, v - 1))}
+              >
+                <Text style={styles.counterBtnText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.counterValue}>{bpmMax}</Text>
+              <TouchableOpacity
+                style={styles.counterBtn}
+                onPress={() => setBpmMax(v => Math.min(220, v + 1))}
+              >
+                <Text style={styles.counterBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* Notificações */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>NOTIFICAÇÕES</Text>
+          <View style={styles.notifRow}>
+            <View style={styles.notifIcon}>
+              <Feather name="mail" size={18} color={COLORS.success} />
+            </View>
+            <View style={styles.notifInfo}>
+              <Text style={styles.notifTitle}>Alertas via E-mail</Text>
+              <Text style={styles.notifSubtitle}>Receba notificações críticas instantâneas</Text>
+            </View>
+            <Switch
+              value={emailAlertas}
+              onValueChange={setEmailAlertas}
+              trackColor={{ false: COLORS.border, true: COLORS.success }}
+              thumbColor="#FFF"
+            />
+          </View>
+        </View>
+
+        {/* Logout */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => navigation.replace('RegisterTutor')}
+        >
+          <Text style={styles.logoutText}>LOGOUT DA CONTA</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: SIZES.padding, paddingTop: 55, paddingBottom: 16,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  avatar: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  headerTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' },
+  scroll: { padding: SIZES.padding, gap: 12, paddingBottom: 30 },
+  card: {
+    backgroundColor: COLORS.card, borderRadius: SIZES.radius,
+    padding: 16, borderWidth: 1, borderColor: COLORS.border,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  cardLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
+  field: { marginBottom: 10 },
+  fieldLabel: { color: COLORS.textSecondary, fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
+  fieldValue: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
+  petRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  petAvatar: {
+    width: 48, height: 48, borderRadius: 10,
+    backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  petName: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold' },
+  petName2: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' },
+  petBreed: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
+  limiteTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  limiteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
+  limiteInfo: { flex: 1 },
+  limiteTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
+  limiteSubtitle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+  counter: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.background, borderRadius: 10,
+    borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden',
+  },
+  counterBtn: { paddingHorizontal: 14, paddingVertical: 10 },
+  counterBtnText: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold' },
+  counterValue: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold', paddingHorizontal: 12 },
+  divider: { height: 1, backgroundColor: COLORS.border },
+  notifRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  notifIcon: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: 'rgba(76,175,80,0.1)', alignItems: 'center', justifyContent: 'center',
+  },
+  notifInfo: { flex: 1 },
+  notifTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
+  notifSubtitle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+  logoutBtn: {
+    borderWidth: 1, borderColor: '#E57373', borderStyle: 'dashed',
+    borderRadius: SIZES.radius, padding: 18, alignItems: 'center',
+  },
+  logoutText: { color: '#E57373', fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+});
