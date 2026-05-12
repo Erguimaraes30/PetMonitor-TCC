@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator
+  SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar
 } from 'react-native';
-import { COLORS, SIZES } from '../constants/theme';
+import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext'; // Importação do tema
 
 const LoginScreen = ({ navigation }) => {
+  const { colors, dark } = useTheme(); // Acesso às cores dinâmicas
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,11 +25,8 @@ const LoginScreen = ({ navigation }) => {
     setErro('');
 
     try {
-      // Aqui você faria a chamada à API de login
-      // Por enquanto, simulamos um login bem-sucedido
+      // Simulação de login
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Se chegou aqui, login foi bem-sucedido
       navigation.replace('MainApp');
     } catch (error) {
       setErro('E-mail ou senha incorretos');
@@ -36,51 +35,48 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleForgotPassword = () => {
-    // Aqui você pode navegar para uma tela de recuperação de senha
-    alert('Funcionalidade de recuperação de senha em breve!');
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.wrapper}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logo}>
-            <Feather name="heart" size={40} color={COLORS.primary} />
+          <View style={[styles.logo, { backgroundColor: colors.primary + '15' }]}>
+            <Feather name="heart" size={40} color={colors.primary} />
           </View>
-          <Text style={styles.appName}>PetMonitor</Text>
-          <Text style={styles.subtitle}>Monitoramento Clínico do Seu Pet</Text>
+          <Text style={[styles.appName, { color: colors.textPrimary }]}>PetMonitor</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Monitoramento Clínico do Seu Pet</Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-MAIL</Text>
-            <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="seu@email.com"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
+                autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
                 editable={!loading}
               />
-              <Feather name="mail" size={20} color={COLORS.textSecondary} />
+              <Feather name="mail" size={20} color={colors.textSecondary} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>SENHA</Text>
-            <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>SENHA</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="••••••••"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showPassword}
                 value={senha}
                 onChangeText={setSenha}
@@ -90,7 +86,7 @@ const LoginScreen = ({ navigation }) => {
                 <Feather
                   name={showPassword ? 'eye' : 'eye-off'}
                   size={20}
-                  color={COLORS.textSecondary}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -105,45 +101,45 @@ const LoginScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.forgotButton}
-            onPress={handleForgotPassword}
+            onPress={() => alert('Em breve!')}
             disabled={loading}
           >
-            <Text style={styles.forgotText}>Esqueceu a senha?</Text>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>Esqueceu a senha?</Text>
           </TouchableOpacity>
         </View>
 
         {/* Buttons */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
+            style={[styles.buttonPrimary, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFF" size="small" />
+              <ActivityIndicator color="#000" size="small" />
             ) : (
               <Text style={styles.buttonText}>ENTRAR</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OU</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OU</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity
-            style={styles.buttonSecondary}
+            style={[styles.buttonSecondary, { borderColor: colors.primary }]}
             onPress={() => navigation.replace('RegisterTutor')}
             disabled={loading}
           >
-            <Text style={styles.buttonSecondaryText}>CRIAR NOVA CONTA</Text>
+            <Text style={[styles.buttonSecondaryText, { color: colors.primary }]}>CRIAR NOVA CONTA</Text>
           </TouchableOpacity>
 
-          <Text style={styles.disclaimer}>
+          <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
             Ao continuar, você concorda com nossos{' '}
-            <Text style={styles.link}>Termos de Serviço</Text> e{' '}
-            <Text style={styles.link}>Política de Privacidade</Text>
+            <Text style={[styles.link, { color: colors.primary }]}>Termos de Serviço</Text> e{' '}
+            <Text style={[styles.link, { color: colors.primary }]}>Política de Privacidade</Text>
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -152,151 +148,32 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  wrapper: {
-    flex: 1,
-    paddingHorizontal: SIZES.padding,
-    justifyContent: 'space-between',
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 50,
-  },
-  logo: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  appName: {
-    color: COLORS.textPrimary,
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
-  form: {
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  label: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    color: COLORS.textPrimary,
-    fontSize: 15,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E57373' + '15',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    marginTop: 4,
-  },
-  errorText: {
-    color: '#E57373',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-  },
-  forgotText: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  footer: {
-    gap: 16,
-    marginBottom: 30,
-  },
-  buttonPrimary: {
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.border,
-  },
-  dividerText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-    marginHorizontal: 12,
-  },
-  buttonSecondary: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    borderRadius: SIZES.radius,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonSecondaryText: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  disclaimer: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  link: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
+  container: { flex: 1 },
+  wrapper: { flex: 1, paddingHorizontal: SIZES.padding, justifyContent: 'space-between' },
+  header: { alignItems: 'center', marginTop: 40, marginBottom: 50 },
+  logo: { width: 70, height: 70, borderRadius: 35, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  appName: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
+  subtitle: { fontSize: 14 },
+  form: { gap: 16 },
+  inputGroup: { gap: 8 },
+  label: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderRadius: SIZES.radius, borderWidth: 1, paddingHorizontal: 16, gap: 12 },
+  input: { flex: 1, height: 50, fontSize: 15 },
+  errorContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E57373' + '15', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, gap: 8, marginTop: 4 },
+  errorText: { color: '#E57373', fontSize: 12, fontWeight: '600' },
+  forgotButton: { alignSelf: 'flex-end', marginTop: 8 },
+  forgotText: { fontSize: 13, fontWeight: '600' },
+  footer: { gap: 16, marginBottom: 30 },
+  buttonPrimary: { borderRadius: SIZES.radius, height: 50, alignItems: 'center', justifyContent: 'center' },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: '#000', fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, fontWeight: '600', marginHorizontal: 12 },
+  buttonSecondary: { borderWidth: 1, borderRadius: SIZES.radius, height: 50, alignItems: 'center', justifyContent: 'center' },
+  buttonSecondaryText: { fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+  disclaimer: { fontSize: 11, textAlign: 'center', lineHeight: 18 },
+  link: { fontWeight: '600' },
 });
 
 export default LoginScreen;

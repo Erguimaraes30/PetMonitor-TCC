@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { COLORS, SIZES } from '../constants/theme';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { DataContext } from '../context/DataContext';
+import { useTheme } from '../context/ThemeContext'; // Hook de tema
 
 const RegisterVet = ({ navigation }) => {
+  const { colors, dark } = useTheme();
   const { updateVetData } = useContext(DataContext);
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -13,82 +15,100 @@ const RegisterVet = ({ navigation }) => {
     updateVetData({ nome, email });
     navigation.navigate('MainApp');
   };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
-          <Text style={styles.backText}>Vet Portal</Text>
+          <Feather name="arrow-left" size={24} color={colors.textPrimary} />
+          <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
         </TouchableOpacity>
 
         <View style={styles.header}>
           <View style={styles.stepsInfo}>
-            <Text style={styles.stepLabel}>ETAPA 3 DE 3</Text>
-            <Text style={styles.stepStatus}>FINALIZANDO</Text>
+            <Text style={[styles.stepLabel, { color: colors.primary }]}>ETAPA 3 DE 3</Text>
+            <Text style={[styles.stepStatus, { color: colors.textSecondary }]}>FINALIZANDO</Text>
           </View>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressActive, { width: '100%' }]} />
+          <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
+            <View style={[styles.progressActive, { width: '100%', backgroundColor: colors.primary }]} />
           </View>
-          <Text style={styles.title}>Dados do veterinário</Text>
-          <Text style={styles.subtitle}>Insira as informações profissionais para concluir a configuração.</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Dados do veterinário</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Insira as informações profissionais para concluir a configuração.
+          </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>NOME COMPLETO</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Dr. Nome Sobrenome" placeholderTextColor={COLORS.textSecondary} value={nome} onChangeText={setNome} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="Dr. Nome Sobrenome" 
+                placeholderTextColor={colors.textSecondary} 
+                value={nome} 
+                onChangeText={setNome} 
+              />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-MAIL DO VETERINÁRIO</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="email@vetservico.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" value={email} onChangeText={setEmail} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL DO VETERINÁRIO</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="email@vetservico.com" 
+                placeholderTextColor={colors.textSecondary} 
+                keyboardType="email-address" 
+                autoCapitalize="none"
+                value={email} 
+                onChangeText={setEmail} 
+              />
             </View>
           </View>
         </View>
 
         <TouchableOpacity 
-          style={styles.buttonFinalize}
+          style={[styles.buttonFinalize, { backgroundColor: dark ? '#2D447B' : colors.primary }]}
           onPress={handleFinalize}
         >
-          <Text style={styles.buttonTextFinalize}>Finalizar Cadastro</Text>
-          <Feather name="check-circle" size={20} color="#FFF" />
+          <Text style={[styles.buttonTextFinalize, { color: dark ? '#FFF' : '#000' }]}>Finalizar Cadastro</Text>
+          <Feather name="check-circle" size={20} color={dark ? '#FFF' : '#000'} />
         </TouchableOpacity>
 
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flex: 1, padding: SIZES.padding },
+  container: { flex: 1 },
+  content: { padding: SIZES.padding },
   backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 30, marginTop: 10 },
-  backText: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  backText: { fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
   header: { marginBottom: 30 },
   stepsInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  stepLabel: { color: COLORS.primary, fontSize: 12, fontWeight: 'bold' },
-  stepStatus: { color: COLORS.textSecondary, fontSize: 12 },
-  progressBar: { height: 4, backgroundColor: COLORS.secondary, borderRadius: 2, marginBottom: 25 },
-  progressActive: { height: 4, backgroundColor: COLORS.primary, borderRadius: 2 },
-  title: { fontSize: SIZES.fonts.h1, color: COLORS.textPrimary, fontWeight: 'bold', marginBottom: 10 },
-  subtitle: { fontSize: SIZES.fonts.body, color: COLORS.textSecondary, lineHeight: 22 },
-  form: { flex: 1 },
+  stepLabel: { fontSize: 12, fontWeight: 'bold' },
+  stepStatus: { fontSize: 12 },
+  progressBar: { height: 4, borderRadius: 2, marginBottom: 25 },
+  progressActive: { height: 4, borderRadius: 2 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 10 },
+  subtitle: { fontSize: 15, lineHeight: 22 },
+  form: { flex: 1, marginBottom: 40 },
   inputGroup: { marginBottom: 20 },
-  label: { color: COLORS.textSecondary, fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
+  label: { fontSize: 12, fontWeight: 'bold', marginBottom: 8, letterSpacing: 1 },
   inputContainer: {
-    backgroundColor: COLORS.card, borderRadius: SIZES.radius, paddingHorizontal: 15,
-    borderWidth: 1, borderColor: COLORS.border, height: 55, justifyContent: 'center'
+    borderRadius: SIZES.radius, paddingHorizontal: 15,
+    borderWidth: 1, height: 55, justifyContent: 'center'
   },
-  input: { color: COLORS.textPrimary, fontSize: SIZES.fonts.body },
+  input: { fontSize: 16 },
   buttonFinalize: {
-    backgroundColor: '#2D447B', height: 60, borderRadius: SIZES.radius,
+    height: 60, borderRadius: SIZES.radius,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20
   },
-  buttonTextFinalize: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginRight: 10 }
+  buttonTextFinalize: { fontSize: 18, fontWeight: 'bold', marginRight: 10 }
 });
 
 export default RegisterVet;

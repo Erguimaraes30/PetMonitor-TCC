@@ -1,11 +1,14 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { COLORS, SIZES } from '../constants/theme';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { DataContext } from '../context/DataContext';
+import { useTheme } from '../context/ThemeContext'; // Hook de tema
 
 const RegisterTutor = ({ navigation }) => {
+  const { colors, dark } = useTheme();
   const { updateTutorData } = useContext(DataContext);
+  
   const [nome, setNome] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
@@ -15,100 +18,133 @@ const RegisterTutor = ({ navigation }) => {
     updateTutorData({ nome, whatsapp, email, senha });
     navigation.navigate('RegisterPet');
   };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressActive, { width: '33%' }]} />
+          <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
+            <View style={[styles.progressActive, { width: '33%', backgroundColor: colors.primary }]} />
           </View>
-          <Text style={styles.title}>Bem-vindo ao PetMonitor</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Bem-vindo ao PetMonitor</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Inicie o monitoramento clínico do seu pet preenchendo os dados do tutor.
           </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>NOME COMPLETO</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Como devemos te chamar?" placeholderTextColor={COLORS.textSecondary} value={nome} onChangeText={setNome} />
-              <Feather name="user" size={20} color={COLORS.textSecondary} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="Como devemos te chamar?" 
+                placeholderTextColor={colors.textSecondary} 
+                value={nome} 
+                onChangeText={setNome} 
+              />
+              <Feather name="user" size={20} color={colors.textSecondary} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>WHATSAPP</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="(00) 00000-0000" placeholderTextColor={COLORS.textSecondary} keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} />
-              <Feather name="message-square" size={20} color={COLORS.textSecondary} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>WHATSAPP</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="(00) 00000-0000" 
+                placeholderTextColor={colors.textSecondary} 
+                keyboardType="phone-pad" 
+                value={whatsapp} 
+                onChangeText={setWhatsapp} 
+              />
+              <Feather name="message-square" size={20} color={colors.textSecondary} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-MAIL</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="exemplo@email.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" value={email} onChangeText={setEmail} />
-              <Feather name="mail" size={20} color={COLORS.textSecondary} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="exemplo@email.com" 
+                placeholderTextColor={colors.textSecondary} 
+                keyboardType="email-address" 
+                autoCapitalize="none"
+                value={email} 
+                onChangeText={setEmail} 
+              />
+              <Feather name="mail" size={20} color={colors.textSecondary} />
             </View>
           </View>
+
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>SENHA</Text>
-            <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={COLORS.textSecondary} secureTextEntry value={senha} onChangeText={setSenha} />
-              <Feather name="lock" size={20} color={COLORS.textSecondary} />
+            <Text style={[styles.label, { color: colors.textSecondary }]}>SENHA</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TextInput 
+                style={[styles.input, { color: colors.textPrimary }]} 
+                placeholder="Digite sua senha" 
+                placeholderTextColor={colors.textSecondary} 
+                secureTextEntry 
+                value={senha} 
+                onChangeText={setSenha} 
+              />
+              <Feather name="lock" size={20} color={colors.textSecondary} />
             </View>
           </View>
         </View>
-        
 
         <View style={styles.footer}>
           <TouchableOpacity 
-            style={styles.buttonPrimary}
+            style={[styles.buttonPrimary, { backgroundColor: colors.primary }]}
             onPress={handleNext}
           >
             <Text style={styles.buttonText}>Próximo</Text>
             <Feather name="arrow-right" size={20} color="#000" />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.loginLink}>
-            <Text style={styles.loginText}>
-              Já possui uma conta? <Text style={styles.loginTextBold}>Entrar</Text>
+          <TouchableOpacity 
+            style={styles.loginLink}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={[styles.loginText, { color: colors.textSecondary }]}>
+              Já possui uma conta? <Text style={[styles.loginTextBold, { color: colors.primary }]}>Entrar</Text>
             </Text>
           </TouchableOpacity>
         </View>
 
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flex: 1, padding: SIZES.padding },
-  header: { marginTop: 40, marginBottom: 30 },
-  progressBar: { height: 4, backgroundColor: COLORS.secondary, borderRadius: 2, marginBottom: 25 },
-  progressActive: { height: 4, backgroundColor: COLORS.primary, borderRadius: 2 },
-  title: { fontSize: SIZES.fonts.h1, color: COLORS.textPrimary, fontWeight: 'bold', marginBottom: 10 },
-  subtitle: { fontSize: SIZES.fonts.body, color: COLORS.textSecondary, lineHeight: 22 },
-  form: { flex: 1 },
+  container: { flex: 1 },
+  content: { padding: SIZES.padding },
+  header: { marginTop: 20, marginBottom: 30 },
+  progressBar: { height: 4, borderRadius: 2, marginBottom: 25 },
+  progressActive: { height: 4, borderRadius: 2 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 10 },
+  subtitle: { fontSize: 15, lineHeight: 22 },
+  form: { marginBottom: 30 },
   inputGroup: { marginBottom: 20 },
-  label: { color: COLORS.textSecondary, fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
+  label: { fontSize: 12, fontWeight: 'bold', marginBottom: 8, letterSpacing: 1 },
   inputContainer: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card,
+    flexDirection: 'row', alignItems: 'center',
     borderRadius: SIZES.radius, paddingHorizontal: 15, borderWidth: 1,
-    borderColor: COLORS.border, height: 55
+    height: 55
   },
-  input: { flex: 1, color: COLORS.textPrimary, fontSize: SIZES.fonts.body },
+  input: { flex: 1, fontSize: 15 },
   footer: { paddingBottom: 20 },
   buttonPrimary: {
-    backgroundColor: COLORS.primary, height: 60, borderRadius: SIZES.radius,
+    height: 60, borderRadius: SIZES.radius,
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20
   },
   buttonText: { color: '#000', fontSize: 18, fontWeight: 'bold', marginRight: 10 },
-  loginText: { color: COLORS.textSecondary, textAlign: 'center' },
-  loginTextBold: { color: COLORS.primary, fontWeight: 'bold' }
+  loginText: { textAlign: 'center', fontSize: 14 },
+  loginTextBold: { fontWeight: 'bold' }
 });
 
 export default RegisterTutor;
