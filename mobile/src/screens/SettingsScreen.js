@@ -17,7 +17,6 @@ const THEME_OPTIONS = [
 const LANGUAGE_OPTIONS = [
   { key: 'pt', label: 'Português' },
   { key: 'en', label: 'English' },
-  { key: 'es', label: 'Español' },
 ];
 
 export default function SettingsScreen({ navigation }) {
