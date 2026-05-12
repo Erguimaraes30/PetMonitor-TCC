@@ -42,7 +42,15 @@ const RegisterTutor = ({ navigation }) => {
               <Feather name="mail" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>SENHA</Text>
+            <View style={styles.inputContainer}>
+              <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={COLORS.textSecondary} secureTextEntry />
+              <Feather name="lock" size={20} color={COLORS.textSecondary} />
+            </View>
+          </View>
         </View>
+        
 
         <View style={styles.footer}>
           <TouchableOpacity 

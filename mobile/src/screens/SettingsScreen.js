@@ -188,7 +188,7 @@ export default function SettingsScreen({ navigation }) {
         {/* Logout */}
                 <TouchableOpacity
                   style={styles.logoutBtn}
-                  onPress={() => navigation.replace('RegisterTutor')}
+                  onPress={() => navigation.replace('Login')}
                 >
                   <Text style={styles.logoutText}>LOGOUT DA CONTA</Text>
                 </TouchableOpacity>
