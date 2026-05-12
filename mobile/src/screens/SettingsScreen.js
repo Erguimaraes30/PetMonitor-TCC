@@ -9,9 +9,8 @@ import { COLORS, SIZES } from '../constants/theme';
 const { width } = Dimensions.get('window');
 
 const THEME_OPTIONS = [
-  { key: 'dark', label: 'Dark', color: '#1A1A1A' },
+  { key: 'dark', label: 'Dark', color: '0F1117' },
   { key: 'light', label: 'Light', color: '#FFFFFF' },
-  { key: 'blue', label: 'Blue', color: '#0066CC' },
 ];
 
 const LANGUAGE_OPTIONS = [
@@ -102,31 +101,39 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Aparência */}
+       {/* Aparência */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>APARÊNCIA</Text>
           <View style={styles.card}>
             <Text style={styles.settingLabel}>TEMA</Text>
             <View style={styles.themeGrid}>
-              {THEME_OPTIONS.map(option => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[
-                    styles.themeOption,
-                    tema === option.key && styles.themeOptionActive,
-                    { borderColor: option.key === 'light' ? '#DDD' : COLORS.border }
-                  ]}
-                  onPress={() => setTema(option.key)}
-                >
-                  <View
+              {THEME_OPTIONS.map((option) => {
+                const isActive = tema === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    activeOpacity={0.7}
                     style={[
-                      styles.themePreview,
-                      { backgroundColor: option.key === 'light' ? '#FFFFFF' : option.key === 'blue' ? '#0066CC' : '#1A1A1A' }
+                      styles.themeOption,
+                      isActive && styles.themeOptionActive
                     ]}
-                  />
-                  <Text style={styles.themeLabel}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
+                    onPress={() => setTema(option.key)}
+                  >
+                    <View
+                      style={[
+                        styles.themePreview,
+                        { backgroundColor: option.color }
+                      ]}
+                    />
+                    <Text style={[
+                      styles.themeLabel,
+                      isActive && { color: COLORS.primary }
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         </View>
