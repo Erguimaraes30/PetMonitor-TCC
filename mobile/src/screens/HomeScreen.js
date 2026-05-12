@@ -4,9 +4,10 @@ import {
   TouchableOpacity, Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../constants/theme';
-import Svg, { Polyline, Line, Text as SvgText } from 'react-native-svg';
+import { SIZES } from '../constants/theme';
+import Svg, { Polyline } from 'react-native-svg';
 import { DataContext } from '../context/DataContext';
+import { useTheme } from '../context/ThemeContext'; // Importação do tema
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
@@ -17,10 +18,10 @@ function getStatus(bpm) {
   if (bpm < 60) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
   if (bpm > 140) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
   if (bpm > 120) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENÇÃO' };
-  return { label: 'NORMAL', color: COLORS.success, global: 'NORMAL' };
+  return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' }; // Verde fixo para sucesso
 }
 
-function MiniGraph({ data }) {
+function MiniGraph({ data, strokeColor }) {
   if (data.length < 2) return null;
 
   const min = Math.min(...data) - 5;
@@ -38,7 +39,7 @@ function MiniGraph({ data }) {
       <Polyline
         points={points}
         fill="none"
-        stroke={COLORS.primary}
+        stroke={strokeColor}
         strokeWidth="2"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -49,6 +50,8 @@ function MiniGraph({ data }) {
 
 export default function HomeScreen({ navigation }) {
   const { petData } = useContext(DataContext);
+  const { dark, colors } = useTheme(); // Hook de tema
+  
   const [bpm, setBpm] = useState(82);
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(82));
   const [lastUpdate, setLastUpdate] = useState('agora');
@@ -63,8 +66,7 @@ export default function HomeScreen({ navigation }) {
 
         setHistory(h => {
           const updated = [...h.slice(1), final];
-          const avg = Math.round(updated.reduce((a, b) => a + b, 0) / updated.length);
-          mediaRef.current = avg;
+          mediaRef.current = Math.round(updated.reduce((a, b) => a + b, 0) / updated.length);
           return updated;
         });
 
@@ -78,28 +80,29 @@ export default function HomeScreen({ navigation }) {
   const status = getStatus(bpm);
   const diff = bpm - mediaRef.current;
   const diffText = diff > 0 ? `+${diff} BPM ACIMA DA MÉDIA` : diff < 0 ? `${diff} BPM ABAIXO DA MÉDIA` : 'NA MÉDIA';
-  const globalColor = status.global === 'NORMAL' ? COLORS.success : status.global === 'ATENÇÃO' ? '#FFB74D' : '#E57373';
+  
+  // Cores de status adaptadas
+  const globalColor = status.global === 'NORMAL' ? colors.success : status.global === 'ATENÇÃO' ? '#FFB74D' : colors.error;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <View style={styles.headerLeft}>
-          <View style={styles.avatar}>
-            <Feather name="github" size={20} color={COLORS.primary} />
+          <View style={[styles.avatar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="github" size={20} color={colors.primary} />
           </View>
-          <Text style={styles.petName}>{petData.nome || 'Pet'}</Text>
+          <Text style={[styles.petName, { color: colors.textPrimary }]}>{petData.nome || 'Pet'}</Text>
         </View>
         <View style={styles.headerRight}>
-          <View style={styles.harnessbadge}>
-            <View style={styles.harnessOnlineDot} />
-            <Text style={styles.harnessText}>Harness: Online</Text>
+          <View style={[styles.harnessbadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.harnessOnlineDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>Harness: Online</Text>
           </View>
-          <TouchableOpacity>
-            <Feather name="settings" size={22} color={COLORS.textSecondary} 
-            onPress={() => navigation.navigate('Settings')}/>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+            <Feather name="settings" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -107,68 +110,69 @@ export default function HomeScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Card Status Global */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statusRow}>
             <View>
-              <Text style={styles.cardLabel}>STATUS GLOBAL</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS GLOBAL</Text>
               <Text style={[styles.statusValue, { color: globalColor }]}>{status.global}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.cardLabel}>SINCRONIZADO</Text>
-              <Text style={styles.cardSubValue}>Última atualização:</Text>
-              <Text style={styles.cardSubValue}>{lastUpdate}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINCRONIZADO</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>Última atualização:</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{lastUpdate}</Text>
             </View>
           </View>
         </View>
 
         {/* Card BPM + Gráfico */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.bpmRow}>
             <View>
-              <Text style={styles.cardLabel}>FREQUÊNCIA{'\n'}CARDÍACA</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>FREQUÊNCIA{'\n'}CARDÍACA</Text>
               <View style={styles.bpmValueRow}>
-                <Text style={styles.bpmNumber}>{bpm}</Text>
-                <Text style={styles.bpmUnit}> BPM</Text>
+                <Text style={[styles.bpmNumber, { color: colors.textPrimary }]}>{bpm}</Text>
+                <Text style={[styles.bpmUnit, { color: colors.textSecondary }]}> BPM</Text>
               </View>
             </View>
-            <Text style={[styles.diffText, { color: diff > 10 ? '#FFB74D' : COLORS.textSecondary }]}>
+            <Text style={[styles.diffText, { color: diff > 10 ? '#FFB74D' : colors.textSecondary }]}>
               {diffText}
             </Text>
           </View>
 
           <View style={styles.graphContainer}>
-            <MiniGraph data={history} />
+            <MiniGraph data={history} strokeColor={colors.primary} />
             <View style={styles.graphLabels}>
-              <Text style={styles.graphLabel}>-60 MIN</Text>
-              <Text style={styles.graphLabel}>AGORA</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>-60 MIN</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>AGORA</Text>
             </View>
           </View>
         </View>
 
         {/* Botão Histórico */}
         <TouchableOpacity
-          style={styles.historyButton}
+          style={[styles.historyButton, { backgroundColor: colors.card, borderColor: colors.primary + '44' }]}
           onPress={() => navigation.navigate('Historico')}
         >
-          <Feather name="clock" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
-          <Text style={styles.historyButtonText}>Ver Histórico Detalhado</Text>
-          <Feather name="chevron-right" size={18} color={COLORS.textSecondary} style={{ marginLeft: 'auto' }} />
+          <Feather name="clock" size={18} color={colors.primary} style={{ marginRight: 10 }} />
+          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>Ver Histórico Detalhado</Text>
+          <Feather name="chevron-right" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
         {/* Card IA Engine */}
-        <View style={styles.iaCard}>
-          <View style={styles.iaBadge}>
-            <Text style={styles.iaBadgeText}>IA ENGINE</Text>
+        <View style={[styles.iaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.iaBadge, { backgroundColor: colors.primary + '11' }]}>
+            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>IA ENGINE</Text>
           </View>
-          <TouchableOpacity style={styles.iaCard}
-          onPress={() => navigation.navigate('ResumoDetalhado')}
-            >
-              <Text style={styles.iaTitle}>ATIVIDADE (Inferida)</Text>
-              <Text style={styles.iaSubtitle}>Resumo Detalhado</Text>
-              <Text style={styles.iaBody}>
-               Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
-              </Text>
-           </TouchableOpacity>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('ResumoDetalhado')}
+          >
+            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>ATIVIDADE (Inferida)</Text>
+            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>Resumo Detalhado</Text>
+            <Text style={[styles.iaBody, { color: colors.textSecondary }]}>
+              Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
+            </Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -177,63 +181,49 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: SIZES.padding, paddingTop: 55, paddingBottom: 16,
-    backgroundColor: COLORS.background,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center',
-    marginRight: 10, borderWidth: 1, borderColor: COLORS.border
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 10, borderWidth: 1
   },
-  petName: { color: COLORS.textPrimary, fontSize: 24, fontWeight: 'bold' },
+  petName: { fontSize: 24, fontWeight: 'bold' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   harnessbadge: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, borderWidth: 1, borderColor: COLORS.border
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20, borderWidth: 1
   },
-  harnessOnlineDot: {
-    width: 7, height: 7, borderRadius: 4,
-    backgroundColor: COLORS.success, marginRight: 6
-  },
-  harnessText: { color: COLORS.textSecondary, fontSize: 12 },
+  harnessOnlineDot: { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
+  harnessText: { fontSize: 12 },
   scroll: { padding: SIZES.padding, gap: 12, paddingBottom: 30 },
-  card: {
-    backgroundColor: COLORS.card, borderRadius: SIZES.radius,
-    padding: 16, borderWidth: 1, borderColor: COLORS.border
-  },
-  cardLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
+  card: { borderRadius: SIZES.radius, padding: 16, borderWidth: 1 },
+  cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   statusValue: { fontSize: 22, fontWeight: 'bold', marginTop: 4 },
-  cardSubValue: { color: COLORS.textSecondary, fontSize: 12, textAlign: 'right' },
+  cardSubValue: { fontSize: 12, textAlign: 'right' },
   bpmRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   bpmValueRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 },
-  bpmNumber: { color: COLORS.textPrimary, fontSize: 52, fontWeight: 'bold', lineHeight: 56 },
-  bpmUnit: { color: COLORS.textSecondary, fontSize: 16, marginBottom: 6 },
+  bpmNumber: { fontSize: 52, fontWeight: 'bold', lineHeight: 56 },
+  bpmUnit: { fontSize: 16, marginBottom: 6 },
   diffText: { fontSize: 11, fontWeight: 'bold', textAlign: 'right', maxWidth: 130, lineHeight: 16, marginTop: 30 },
   graphContainer: { marginTop: 4 },
   graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  graphLabel: { color: COLORS.textSecondary, fontSize: 10 },
+  graphLabel: { fontSize: 10 },
   historyButton: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, borderRadius: SIZES.radius,
-    padding: 16, borderWidth: 1, borderColor: COLORS.primary + '44'
+    borderRadius: SIZES.radius, padding: 16, borderWidth: 1
   },
-  historyButtonText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
-  iaCard: {
-    backgroundColor: COLORS.card, borderRadius: SIZES.radius,
-    padding: 16, borderWidth: 1, borderColor: COLORS.border, minHeight: 160
-  },
-  iaBadge: {
-    backgroundColor: 'rgba(176,196,255,0.1)', paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 6, alignSelf: 'flex-start', marginBottom: 6
-  },
-  iaBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: 'bold' },
-  iaTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  iaSubtitle: { color: COLORS.textSecondary, fontSize: 13, marginBottom: 8 },
-  iaBody: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
+  historyButtonText: { fontSize: 15, fontWeight: '500' },
+  iaCard: { borderRadius: SIZES.radius, padding: 16, borderWidth: 1, minHeight: 160 },
+  iaBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 6 },
+  iaBadgeText: { fontSize: 10, fontWeight: 'bold' },
+  iaTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  iaSubtitle: { fontSize: 13, marginBottom: 8 },
+  iaBody: { fontSize: 13, lineHeight: 20 },
 });

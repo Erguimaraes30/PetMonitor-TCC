@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../constants/theme';
+import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
+import { useTheme } from '../context/ThemeContext'; // Importação do tema
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 100;
 
-// ── Dados mockados ──────────────────────────────────────────────────────────
+// Dados mockados (Mantidos conforme seu código)
 const MOCK_DATA = {
   hoje: [
     { id: 1, hora: '14:20', bpm: 85, status: 'normal' },
@@ -45,15 +46,15 @@ const FILTERS = [
   { key: '30dias', label: '30 dias' },
 ];
 
-function statusConfig(status) {
+function statusConfig(status, successColor) {
   switch (status) {
     case 'alerta':   return { color: '#E57373', label: 'Alerta',  icon: 'alert-triangle' };
     case 'elevado':  return { color: '#FFB74D', label: 'Elevado', icon: 'trending-up' };
-    default:         return { color: COLORS.success, label: 'Normal', icon: 'heart' };
+    default:         return { color: successColor, label: 'Normal', icon: 'heart' };
   }
 }
 
-function LineGraph({ data }) {
+function LineGraph({ data, strokeColor }) {
   if (data.length < 2) return null;
   const values = data.map(d => d.bpm);
   const min = Math.min(...values) - 10;
@@ -71,7 +72,7 @@ function LineGraph({ data }) {
       <Polyline
         points={points}
         fill="none"
-        stroke={COLORS.primary}
+        stroke={strokeColor}
         strokeWidth="2.5"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -81,6 +82,7 @@ function LineGraph({ data }) {
 }
 
 export default function HistoricoScreen({ navigation }) {
+  const { dark, colors } = useTheme();
   const [filter, setFilter] = useState('hoje');
   const data = MOCK_DATA[filter];
 
@@ -89,15 +91,14 @@ export default function HistoricoScreen({ navigation }) {
   const min = Math.min(...data.map(d => d.bpm));
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Histórico de Batimentos</Text>
-        <TouchableOpacity>
-          <Feather name="settings" size={22} color={COLORS.textSecondary} 
-            onPress={() => navigation.navigate('Settings')}/>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Histórico</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Feather name="settings" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -106,10 +107,18 @@ export default function HistoricoScreen({ navigation }) {
         {FILTERS.map(f => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterBtn, filter === f.key && styles.filterBtnActive]}
+            style={[
+                styles.filterBtn, 
+                { backgroundColor: colors.card, borderColor: colors.border },
+                filter === f.key && { backgroundColor: colors.primary + '22', borderColor: colors.primary }
+            ]}
             onPress={() => setFilter(f.key)}
           >
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
+            <Text style={[
+                styles.filterText, 
+                { color: colors.textSecondary },
+                filter === f.key && { color: colors.primary, fontWeight: 'bold' }
+            ]}>
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -120,49 +129,60 @@ export default function HistoricoScreen({ navigation }) {
 
         {/* Cards de resumo */}
         <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>MÉDIA</Text>
-            <Text style={styles.summaryValue}>{media}</Text>
-            <Text style={styles.summaryUnit}>BPM</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>MÉDIA</Text>
+            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{media}</Text>
+            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>MÁXIMO</Text>
-            <Text style={[styles.summaryValue, { color: max > 140 ? '#E57373' : max > 120 ? '#FFB74D' : COLORS.textPrimary }]}>{max}</Text>
-            <Text style={styles.summaryUnit}>BPM</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>MÁXIMO</Text>
+            <Text style={[
+                styles.summaryValue, 
+                { color: max > 140 ? '#E57373' : max > 120 ? '#FFB74D' : colors.textPrimary }
+            ]}>{max}</Text>
+            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>MÍNIMO</Text>
-            <Text style={[styles.summaryValue, { color: min < 60 ? '#E57373' : COLORS.textPrimary }]}>{min}</Text>
-            <Text style={styles.summaryUnit}>BPM</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>MÍNIMO</Text>
+            <Text style={[
+                styles.summaryValue, 
+                { color: min < 60 ? '#E57373' : colors.textPrimary }
+            ]}>{min}</Text>
+            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
         </View>
 
         {/* Gráfico */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>GRÁFICO DO PERÍODO</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>GRÁFICO DO PERÍODO</Text>
           <View style={styles.graphContainer}>
-            <LineGraph data={data} />
+            <LineGraph data={data} strokeColor={colors.primary} />
             <View style={styles.graphLabels}>
-              <Text style={styles.graphLabel}>{data[0].hora}</Text>
-              <Text style={styles.graphLabel}>{data[data.length - 1].hora}</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{data[0].hora}</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{data[data.length - 1].hora}</Text>
             </View>
           </View>
         </View>
 
         {/* Lista de leituras */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>LEITURAS RECENTES</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>LEITURAS RECENTES</Text>
           <View style={{ marginTop: 12 }}>
             {data.map((item, index) => {
-              const s = statusConfig(item.status);
+              const s = statusConfig(item.status, colors.success);
               return (
-                <View key={item.id} style={[styles.readingItem, index < data.length - 1 && styles.readingBorder]}>
+                <View key={item.id} style={[
+                    styles.readingItem, 
+                    index < data.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                ]}>
                   <View style={[styles.statusDot, { backgroundColor: s.color + '22', borderColor: s.color }]}>
                     <Feather name={s.icon} size={14} color={s.color} />
                   </View>
                   <View style={styles.readingInfo}>
-                    <Text style={styles.readingBpm}>{item.bpm} <Text style={styles.readingUnit}>BPM</Text></Text>
-                    <Text style={styles.readingHora}>{item.hora}</Text>
+                    <Text style={[styles.readingBpm, { color: colors.textPrimary }]}>
+                        {item.bpm} <Text style={[styles.readingUnit, { color: colors.textSecondary }]}>BPM</Text>
+                    </Text>
+                    <Text style={[styles.readingHora, { color: colors.textSecondary }]}>{item.hora}</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: s.color + '22' }]}>
                     <Text style={[styles.statusBadgeText, { color: s.color }]}>{s.label}</Text>
@@ -179,53 +199,32 @@ export default function HistoricoScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: SIZES.padding, paddingTop: 55, paddingBottom: 16,
   },
-  headerTitle: { color: COLORS.textPrimary, fontSize: 20, fontWeight: 'bold' },
-  filterRow: {
-    flexDirection: 'row', paddingHorizontal: SIZES.padding,
-    marginBottom: 8, gap: 8,
-  },
-  filterBtn: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: COLORS.card,
-    borderWidth: 1, borderColor: COLORS.border,
-  },
-  filterBtnActive: { backgroundColor: COLORS.primary + '22', borderColor: COLORS.primary },
-  filterText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
-  filterTextActive: { color: COLORS.primary, fontWeight: 'bold' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  filterRow: { flexDirection: 'row', paddingHorizontal: SIZES.padding, marginBottom: 8, gap: 8 },
+  filterBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  filterText: { fontSize: 13, fontWeight: '500' },
   scroll: { padding: SIZES.padding, gap: 12, paddingBottom: 30 },
   summaryRow: { flexDirection: 'row', gap: 10 },
-  summaryCard: {
-    flex: 1, backgroundColor: COLORS.card, borderRadius: SIZES.radius,
-    padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border,
-  },
-  summaryLabel: { color: COLORS.textSecondary, fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
-  summaryValue: { color: COLORS.textPrimary, fontSize: 28, fontWeight: 'bold' },
-  summaryUnit: { color: COLORS.textSecondary, fontSize: 11, marginTop: 2 },
-  card: {
-    backgroundColor: COLORS.card, borderRadius: SIZES.radius,
-    padding: 16, borderWidth: 1, borderColor: COLORS.border,
-  },
-  cardLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
+  summaryCard: { flex: 1, borderRadius: SIZES.radius, padding: 14, alignItems: 'center', borderWidth: 1 },
+  summaryLabel: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
+  summaryValue: { fontSize: 28, fontWeight: 'bold' },
+  summaryUnit: { fontSize: 11, marginTop: 2 },
+  card: { borderRadius: SIZES.radius, padding: 16, borderWidth: 1 },
+  cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
   graphContainer: { marginTop: 12 },
   graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  graphLabel: { color: COLORS.textSecondary, fontSize: 10 },
-  readingItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12,
-  },
-  readingBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  statusDot: {
-    width: 36, height: 36, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 1,
-  },
+  graphLabel: { fontSize: 10 },
+  readingItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  statusDot: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   readingInfo: { flex: 1 },
-  readingBpm: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' },
-  readingUnit: { color: COLORS.textSecondary, fontSize: 13, fontWeight: 'normal' },
-  readingHora: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+  readingBpm: { fontSize: 16, fontWeight: 'bold' },
+  readingUnit: { fontSize: 13, fontWeight: 'normal' },
+  readingHora: { fontSize: 12, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusBadgeText: { fontSize: 12, fontWeight: 'bold' },
 });
