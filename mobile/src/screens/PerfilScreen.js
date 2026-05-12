@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Switch
@@ -22,10 +22,11 @@ export default function PerfilScreen({ navigation }) {
             <Feather name="user" size={18} color={COLORS.primary} />
           </View>
           <Text style={styles.petName}>Max</Text>
-          <Text style={styles.headerTitle}>Perfil e Configurações</Text>
+          <Text style={styles.headerTitle}>Perfil</Text>
         </View>
         <TouchableOpacity>
-          <Feather name="more-vertical" size={22} color={COLORS.textSecondary} />
+          <Feather name="settings" size={22} color={COLORS.textSecondary} 
+          onPress={() => navigation.navigate('Settings')}/>
         </TouchableOpacity>
       </View>
 
@@ -41,11 +42,37 @@ export default function PerfilScreen({ navigation }) {
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
+            <Text style={styles.fieldValue}>Enzo Guimaraes</Text>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>CONTATO</Text>
+            <Text style={styles.fieldValue}>+55 21 99910-5599</Text>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>E-MAIL</Text>
+            <Text style={styles.fieldValue}>enzorafael211205@gmail.com</Text>
+          </View>
+        </View>
+
+        {/* Dados do Veterinário */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>DADOS DO VETERINÁRIO</Text>
+            <TouchableOpacity>
+              <Feather name="edit-2" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
             <Text style={styles.fieldValue}>Ricardo Silveira</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>CONTATO</Text>
             <Text style={styles.fieldValue}>+55 11 98877-6655</Text>
+          </View>
+           <View style={styles.field}>
+            <Text style={styles.fieldLabel}>E-MAIL</Text>
+            <Text style={styles.fieldValue}>ricardo.silveira@gmail.com</Text>
           </View>
         </View>
 
@@ -54,7 +81,7 @@ export default function PerfilScreen({ navigation }) {
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>DADOS DO PET</Text>
             <TouchableOpacity>
-              <Feather name="edit-2" size={16} color={COLORS.primary} />
+              <Feather name="edit-3" size={16} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.petRow}>
@@ -67,6 +94,7 @@ export default function PerfilScreen({ navigation }) {
             </View>
           </View>
         </View>
+        
 
         {/* Limites de Alerta */}
         <View style={styles.card}>
@@ -125,35 +153,6 @@ export default function PerfilScreen({ navigation }) {
             </View>
           </View>
         </View>
-
-        {/* Notificações */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>NOTIFICAÇÕES</Text>
-          <View style={styles.notifRow}>
-            <View style={styles.notifIcon}>
-              <Feather name="mail" size={18} color={COLORS.success} />
-            </View>
-            <View style={styles.notifInfo}>
-              <Text style={styles.notifTitle}>Alertas via E-mail</Text>
-              <Text style={styles.notifSubtitle}>Receba notificações críticas instantâneas</Text>
-            </View>
-            <Switch
-              value={emailAlertas}
-              onValueChange={setEmailAlertas}
-              trackColor={{ false: COLORS.border, true: COLORS.success }}
-              thumbColor="#FFF"
-            />
-          </View>
-        </View>
-
-        {/* Logout */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => navigation.replace('RegisterTutor')}
-        >
-          <Text style={styles.logoutText}>LOGOUT DA CONTA</Text>
-        </TouchableOpacity>
-
       </ScrollView>
     </View>
   );
@@ -213,9 +212,5 @@ const styles = StyleSheet.create({
   notifInfo: { flex: 1 },
   notifTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
   notifSubtitle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
-  logoutBtn: {
-    borderWidth: 1, borderColor: '#E57373', borderStyle: 'dashed',
-    borderRadius: SIZES.radius, padding: 18, alignItems: 'center',
-  },
-  logoutText: { color: '#E57373', fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
+ 
 });

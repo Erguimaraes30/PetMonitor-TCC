@@ -96,7 +96,8 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.harnessText}>Harness: Online</Text>
           </View>
           <TouchableOpacity>
-            <Feather name="settings" size={22} color={COLORS.textSecondary} />
+            <Feather name="settings" size={22} color={COLORS.textSecondary} 
+            onPress={() => navigation.navigate('Settings')}/>
           </TouchableOpacity>
         </View>
       </View>
@@ -166,7 +167,6 @@ export default function HomeScreen({ navigation }) {
                Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
               </Text>
            </TouchableOpacity>
-          
         </View>
 
       </ScrollView>

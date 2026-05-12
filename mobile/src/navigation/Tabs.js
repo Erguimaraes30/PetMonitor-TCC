@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import AlertasScreen from '../screens/AlertasScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 
+
 const Tab = createBottomTabNavigator();
 
 export default function Tabs() {
@@ -28,6 +29,7 @@ export default function Tabs() {
             Historico: 'clock',
             Alertas: 'bell',
             Perfil: 'user',
+            Settings: 'settings',
           };
           return <Feather name={icons[route.name]} size={size} color={color} />;
         },

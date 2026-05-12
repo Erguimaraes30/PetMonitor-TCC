@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Dimensions
@@ -80,7 +80,7 @@ function LineGraph({ data }) {
   );
 }
 
-export default function HistoricoScreen() {
+export default function HistoricoScreen({ navigation }) {
   const [filter, setFilter] = useState('hoje');
   const data = MOCK_DATA[filter];
 
@@ -96,7 +96,8 @@ export default function HistoricoScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Histórico de Batimentos</Text>
         <TouchableOpacity>
-          <Feather name="download" size={22} color={COLORS.textSecondary} />
+          <Feather name="settings" size={22} color={COLORS.textSecondary} 
+            onPress={() => navigation.navigate('Settings')}/>
         </TouchableOpacity>
       </View>
 
