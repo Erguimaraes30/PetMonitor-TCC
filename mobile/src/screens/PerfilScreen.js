@@ -1,17 +1,55 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
-  TouchableOpacity, Switch
+  TouchableOpacity, Switch, Modal, TextInput
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
 import { DataContext } from '../context/DataContext';
 
 export default function PerfilScreen({ navigation }) {
-  const { tutorData, petData, vetData } = useContext(DataContext);
+  const { tutorData, updateTutorData, petData, updatePetData, vetData, updateVetData } = useContext(DataContext);
   const [bpmMin, setBpmMin] = useState(60);
   const [bpmMax, setBpmMax] = useState(140);
   const [emailAlertas, setEmailAlertas] = useState(true);
+
+  // Estados dos modais
+  const [tutorModalVisible, setTutorModalVisible] = useState(false);
+  const [vetModalVisible, setVetModalVisible] = useState(false);
+  const [petModalVisible, setPetModalVisible] = useState(false);
+
+  // Estados temporários para edição
+  const [editTutor, setEditTutor] = useState(tutorData);
+  const [editVet, setEditVet] = useState(vetData);
+  const [editPet, setEditPet] = useState(petData);
+
+  // Funções para abrir modais
+  const openTutorModal = () => {
+    setEditTutor(tutorData);
+    setTutorModalVisible(true);
+  };
+  const openVetModal = () => {
+    setEditVet(vetData);
+    setVetModalVisible(true);
+  };
+  const openPetModal = () => {
+    setEditPet(petData);
+    setPetModalVisible(true);
+  };
+
+  // Funções para salvar edições
+  const saveTutorData = () => {
+    updateTutorData(editTutor);
+    setTutorModalVisible(false);
+  };
+  const saveVetData = () => {
+    updateVetData(editVet);
+    setVetModalVisible(false);
+  };
+  const savePetData = () => {
+    updatePetData(editPet);
+    setPetModalVisible(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -37,7 +75,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>DADOS DO TUTOR</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openTutorModal}>
               <Feather name="edit-2" size={16} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
@@ -59,7 +97,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>DADOS DO VETERINÁRIO</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openVetModal}>
               <Feather name="edit-2" size={16} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
@@ -77,7 +115,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>DADOS DO PET</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openPetModal}>
               <Feather name="edit-3" size={16} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
@@ -151,6 +189,186 @@ export default function PerfilScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+
+      {/* Modal Editar Tutor */}
+      <Modal visible={tutorModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>EDITAR DADOS DO TUTOR</Text>
+              <TouchableOpacity onPress={() => setTutorModalVisible(false)}>
+                <Feather name="x" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>NOME COMPLETO</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome completo"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={editTutor.nome}
+                  onChangeText={(text) => setEditTutor({...editTutor, nome: text})}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>WHATSAPP</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="(00) 00000-0000"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="phone-pad"
+                  value={editTutor.whatsapp}
+                  onChangeText={(text) => setEditTutor({...editTutor, whatsapp: text})}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-MAIL</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="email@exemplo.com"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="email-address"
+                  value={editTutor.email}
+                  onChangeText={(text) => setEditTutor({...editTutor, email: text})}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.buttonSecondary} onPress={() => setTutorModalVisible(false)}>
+                <Text style={styles.buttonSecondaryText}>CANCELAR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.buttonPrimary} onPress={saveTutorData}>
+                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Editar Veterinário */}
+      <Modal visible={vetModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>EDITAR DADOS DO VETERINÁRIO</Text>
+              <TouchableOpacity onPress={() => setVetModalVisible(false)}>
+                <Feather name="x" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>NOME COMPLETO</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome do veterinário"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={editVet.nome}
+                  onChangeText={(text) => setEditVet({...editVet, nome: text})}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-MAIL</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="email@veterinario.com"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="email-address"
+                  value={editVet.email}
+                  onChangeText={(text) => setEditVet({...editVet, email: text})}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.buttonSecondary} onPress={() => setVetModalVisible(false)}>
+                <Text style={styles.buttonSecondaryText}>CANCELAR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.buttonPrimary} onPress={saveVetData}>
+                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Editar Pet */}
+      <Modal visible={petModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>EDITAR DADOS DO PET</Text>
+              <TouchableOpacity onPress={() => setPetModalVisible(false)}>
+                <Feather name="x" size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>NOME</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nome do pet"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={editPet.nome}
+                  onChangeText={(text) => setEditPet({...editPet, nome: text})}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>RAÇA</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Raça do pet"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={editPet.raca}
+                  onChangeText={(text) => setEditPet({...editPet, raca: text})}
+                />
+              </View>
+
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, {flex: 1, marginRight: 8}]}>
+                  <Text style={styles.label}>PESO (KG)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="0.0"
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={editPet.peso}
+                    onChangeText={(text) => setEditPet({...editPet, peso: text})}
+                  />
+                </View>
+                <View style={[styles.inputGroup, {flex: 1, marginLeft: 8}]}>
+                  <Text style={styles.label}>IDADE (ANOS)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="0"
+                    placeholderTextColor={COLORS.textSecondary}
+                    keyboardType="numeric"
+                    value={editPet.idade}
+                    onChangeText={(text) => setEditPet({...editPet, idade: text})}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.buttonSecondary} onPress={() => setPetModalVisible(false)}>
+                <Text style={styles.buttonSecondaryText}>CANCELAR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.buttonPrimary} onPress={savePetData}>
+                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -209,5 +427,101 @@ const styles = StyleSheet.create({
   notifInfo: { flex: 1 },
   notifTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '500' },
   notifSubtitle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SIZES.padding,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    width: '100%',
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  modalForm: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    maxHeight: '70%',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: COLORS.textPrimary,
+    fontSize: 14,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 0,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  buttonSecondary: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: SIZES.radius,
+    alignItems: 'center',
+  },
+  buttonSecondaryText: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  buttonPrimary: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.radius,
+    alignItems: 'center',
+  },
+  buttonPrimaryText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
  
 });
