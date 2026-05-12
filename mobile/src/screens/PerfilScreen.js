@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Switch
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
+import { DataContext } from '../context/DataContext';
 
 export default function PerfilScreen({ navigation }) {
+  const { tutorData, petData, vetData } = useContext(DataContext);
   const [bpmMin, setBpmMin] = useState(60);
   const [bpmMax, setBpmMax] = useState(140);
   const [emailAlertas, setEmailAlertas] = useState(true);
@@ -19,10 +21,9 @@ export default function PerfilScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
-            <Feather name="user" size={18} color={COLORS.primary} />
+            <Feather name="github" size={20} color={COLORS.primary} />
           </View>
-          <Text style={styles.petName}>Max</Text>
-          <Text style={styles.headerTitle}>Perfil</Text>
+          <Text style={styles.petName}>{petData.nome || 'Pet'}</Text>
         </View>
         <TouchableOpacity>
           <Feather name="settings" size={22} color={COLORS.textSecondary} 
@@ -42,15 +43,15 @@ export default function PerfilScreen({ navigation }) {
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
-            <Text style={styles.fieldValue}>Enzo Guimaraes</Text>
+            <Text style={styles.fieldValue}>{tutorData.nome || 'Não preenchido'}</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>CONTATO</Text>
-            <Text style={styles.fieldValue}>+55 21 99910-5599</Text>
+            <Text style={styles.fieldValue}>{tutorData.whatsapp || 'Não preenchido'}</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>E-MAIL</Text>
-            <Text style={styles.fieldValue}>enzorafael211205@gmail.com</Text>
+            <Text style={styles.fieldValue}>{tutorData.email || 'Não preenchido'}</Text>
           </View>
         </View>
 
@@ -64,15 +65,11 @@ export default function PerfilScreen({ navigation }) {
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>NOME COMPLETO</Text>
-            <Text style={styles.fieldValue}>Ricardo Silveira</Text>
+            <Text style={styles.fieldValue}>{vetData.nome || 'Não preenchido'}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={styles.fieldLabel}>CONTATO</Text>
-            <Text style={styles.fieldValue}>+55 11 98877-6655</Text>
-          </View>
-           <View style={styles.field}>
             <Text style={styles.fieldLabel}>E-MAIL</Text>
-            <Text style={styles.fieldValue}>ricardo.silveira@gmail.com</Text>
+            <Text style={styles.fieldValue}>{vetData.email || 'Não preenchido'}</Text>
           </View>
         </View>
 
@@ -89,8 +86,8 @@ export default function PerfilScreen({ navigation }) {
               <Feather name="github" size={24} color={COLORS.primary} />
             </View>
             <View>
-              <Text style={styles.petName2}>Max</Text>
-              <Text style={styles.petBreed}>Golden Retriever • 4 anos</Text>
+              <Text style={styles.petName2}>{petData.nome || 'Não preenchido'}</Text>
+              <Text style={styles.petBreed}>{petData.raca ? `${petData.raca} • ${petData.idade} anos` : 'Não preenchido'}</Text>
             </View>
           </View>
         </View>
@@ -164,11 +161,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: SIZES.padding, paddingTop: 55, paddingBottom: 16,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
   avatar: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: COLORS.border,
+    marginRight: 10, borderWidth: 1, borderColor: COLORS.border
   },
   headerTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' },
   scroll: { padding: SIZES.padding, gap: 12, paddingBottom: 30 },
@@ -187,7 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: COLORS.border,
   },
-  petName: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold' },
+  petName: { color: COLORS.textPrimary, fontSize: 24, fontWeight: 'bold' },
   petName2: { color: COLORS.textPrimary, fontSize: 16, fontWeight: 'bold' },
   petBreed: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
   limiteTitleRow: { flexDirection: 'row', alignItems: 'center' },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Dimensions
@@ -6,6 +6,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
 import Svg, { Polyline, Line, Text as SvgText } from 'react-native-svg';
+import { DataContext } from '../context/DataContext';
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
@@ -47,6 +48,7 @@ function MiniGraph({ data }) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { petData } = useContext(DataContext);
   const [bpm, setBpm] = useState(82);
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(82));
   const [lastUpdate, setLastUpdate] = useState('agora');
@@ -86,9 +88,9 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.avatar}>
-            <Feather name="user" size={20} color={COLORS.primary} />
+            <Feather name="github" size={20} color={COLORS.primary} />
           </View>
-          <Text style={styles.petName}>Max</Text>
+          <Text style={styles.petName}>{petData.nome || 'Pet'}</Text>
         </View>
         <View style={styles.headerRight}>
           <View style={styles.harnessbadge}>
@@ -187,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center',
     marginRight: 10, borderWidth: 1, borderColor: COLORS.border
   },
-  petName: { color: COLORS.textPrimary, fontSize: 18, fontWeight: 'bold' },
+  petName: { color: COLORS.textPrimary, fontSize: 24, fontWeight: 'bold' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   harnessbadge: {
     flexDirection: 'row', alignItems: 'center',

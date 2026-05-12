@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
+import { DataContext } from '../context/DataContext';
 
 const RegisterVet = ({ navigation }) => {
+  const { updateVetData } = useContext(DataContext);
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+
+  const handleFinalize = () => {
+    updateVetData({ nome, email });
+    navigation.navigate('MainApp');
+  };
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -29,21 +38,21 @@ const RegisterVet = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>NOME COMPLETO</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Dr. Nome Sobrenome" placeholderTextColor={COLORS.textSecondary} />
+              <TextInput style={styles.input} placeholder="Dr. Nome Sobrenome" placeholderTextColor={COLORS.textSecondary} value={nome} onChangeText={setNome} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>E-MAIL DO VETERINÁRIO</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="email@vetservico.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" />
+              <TextInput style={styles.input} placeholder="email@vetservico.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" value={email} onChangeText={setEmail} />
             </View>
           </View>
         </View>
 
         <TouchableOpacity 
           style={styles.buttonFinalize}
-          onPress={() => navigation.navigate('MainApp')}
+          onPress={handleFinalize}
         >
           <Text style={styles.buttonTextFinalize}>Finalizar Cadastro</Text>
           <Feather name="check-circle" size={20} color="#FFF" />

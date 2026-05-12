@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { DataContext } from '../context/DataContext';
 
 const RegisterPet = ({ navigation }) => {
+  const { updatePetData } = useContext(DataContext);
   const [gender, setGender] = useState(null);
+  const [nome, setNome] = useState('');
+  const [raca, setRaca] = useState('');
+  const [peso, setPeso] = useState('');
+  const [idade, setIdade] = useState('');
+
+  const handleNext = () => {
+    updatePetData({ nome, raca, peso, idade, sexo: gender });
+    navigation.navigate('RegisterVet');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,14 +40,14 @@ const RegisterPet = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>NOME</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Ex: Max" placeholderTextColor={COLORS.textSecondary} />
+              <TextInput style={styles.input} placeholder="Ex: Max" placeholderTextColor={COLORS.textSecondary} value={nome} onChangeText={setNome} />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>RAÇA</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Busque a raça" placeholderTextColor={COLORS.textSecondary} />
+              <TextInput style={styles.input} placeholder="Busque a raça" placeholderTextColor={COLORS.textSecondary} value={raca} onChangeText={setRaca} />
               <Feather name="search" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
@@ -45,13 +56,13 @@ const RegisterPet = ({ navigation }) => {
             <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
               <Text style={styles.label}>PESO (KG)</Text>
               <View style={styles.inputContainer}>
-                <TextInput style={styles.input} placeholder="0.0" keyboardType="numeric" placeholderTextColor={COLORS.textSecondary} />
+                <TextInput style={styles.input} placeholder="0.0" keyboardType="numeric" placeholderTextColor={COLORS.textSecondary} value={peso} onChangeText={setPeso} />
               </View>
             </View>
             <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
               <Text style={styles.label}>IDADE (ANOS)</Text>
               <View style={styles.inputContainer}>
-                <TextInput style={styles.input} placeholder="0" keyboardType="numeric" placeholderTextColor={COLORS.textSecondary} />
+                <TextInput style={styles.input} placeholder="0" keyboardType="numeric" placeholderTextColor={COLORS.textSecondary} value={idade} onChangeText={setIdade} />
               </View>
             </View>
           </View>
@@ -78,7 +89,7 @@ const RegisterPet = ({ navigation }) => {
 
         <TouchableOpacity 
           style={styles.buttonPrimary}
-          onPress={() => navigation.navigate('RegisterVet')}
+          onPress={handleNext}
         >
           <Text style={styles.buttonText}>Próximo</Text>
           <Feather name="arrow-right" size={20} color="#000" />

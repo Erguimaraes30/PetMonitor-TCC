@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
+import { DataContext } from '../context/DataContext';
 
 const RegisterTutor = ({ navigation }) => {
+  const { updateTutorData } = useContext(DataContext);
+  const [nome, setNome] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+
+  const handleNext = () => {
+    updateTutorData({ nome, whatsapp, email, senha });
+    navigation.navigate('RegisterPet');
+  };
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -22,7 +33,7 @@ const RegisterTutor = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>NOME COMPLETO</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Como devemos te chamar?" placeholderTextColor={COLORS.textSecondary} />
+              <TextInput style={styles.input} placeholder="Como devemos te chamar?" placeholderTextColor={COLORS.textSecondary} value={nome} onChangeText={setNome} />
               <Feather name="user" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
@@ -30,7 +41,7 @@ const RegisterTutor = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>WHATSAPP</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="(00) 00000-0000" placeholderTextColor={COLORS.textSecondary} keyboardType="phone-pad" />
+              <TextInput style={styles.input} placeholder="(00) 00000-0000" placeholderTextColor={COLORS.textSecondary} keyboardType="phone-pad" value={whatsapp} onChangeText={setWhatsapp} />
               <Feather name="message-square" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
@@ -38,14 +49,14 @@ const RegisterTutor = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>E-MAIL</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="exemplo@email.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" />
+              <TextInput style={styles.input} placeholder="exemplo@email.com" placeholderTextColor={COLORS.textSecondary} keyboardType="email-address" value={email} onChangeText={setEmail} />
               <Feather name="mail" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>SENHA</Text>
             <View style={styles.inputContainer}>
-              <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={COLORS.textSecondary} secureTextEntry />
+              <TextInput style={styles.input} placeholder="Digite sua senha" placeholderTextColor={COLORS.textSecondary} secureTextEntry value={senha} onChangeText={setSenha} />
               <Feather name="lock" size={20} color={COLORS.textSecondary} />
             </View>
           </View>
@@ -55,7 +66,7 @@ const RegisterTutor = ({ navigation }) => {
         <View style={styles.footer}>
           <TouchableOpacity 
             style={styles.buttonPrimary}
-            onPress={() => navigation.navigate('RegisterPet')}
+            onPress={handleNext}
           >
             <Text style={styles.buttonText}>Próximo</Text>
             <Feather name="arrow-right" size={20} color="#000" />
