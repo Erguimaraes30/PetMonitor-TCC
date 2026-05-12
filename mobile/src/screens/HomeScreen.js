@@ -157,11 +157,16 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.iaBadge}>
             <Text style={styles.iaBadgeText}>IA ENGINE</Text>
           </View>
-          <Text style={styles.iaTitle}>ATIVIDADE (Inferida)</Text>
-          <Text style={styles.iaSubtitle}>Resumo Detalhado</Text>
-          <Text style={styles.iaBody}>
-            Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
-          </Text>
+          <TouchableOpacity style={styles.iaCard}
+          onPress={() => navigation.navigate('ResumoDetalhado')}
+            >
+              <Text style={styles.iaTitle}>ATIVIDADE (Inferida)</Text>
+              <Text style={styles.iaSubtitle}>Resumo Detalhado</Text>
+              <Text style={styles.iaBody}>
+               Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
+              </Text>
+           </TouchableOpacity>
+          
         </View>
 
       </ScrollView>

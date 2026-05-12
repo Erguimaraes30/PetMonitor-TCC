@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
+import ResumoDetalhadoScreen from '../screens/ResumoDetalhadoScreen';
 import RegisterTutor from '../screens/RegisterTutor';
 import RegisterPet from '../screens/RegisterPet';
 import RegisterVet from '../screens/RegisterVet';
@@ -15,6 +15,7 @@ export default function AppNavigator() {
       <Stack.Screen name="RegisterPet" component={RegisterPet} />
       <Stack.Screen name="RegisterVet" component={RegisterVet} />
       <Stack.Screen name="MainApp" component={Tabs} />
+      <Stack.Screen name="ResumoDetalhado" component={ResumoDetalhadoScreen} />
     </Stack.Navigator>
   );
 }
