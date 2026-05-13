@@ -3,9 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Stat
 import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { DataContext } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext'; // Hook de tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // 1. Importação
 
 const RegisterVet = ({ navigation }) => {
+  const { t } = useTranslation(); // 2. Hook de tradução
   const { colors, dark } = useTheme();
   const { updateVetData } = useContext(DataContext);
   const [nome, setNome] = useState('');
@@ -23,26 +25,30 @@ const RegisterVet = ({ navigation }) => {
         
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-          <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
+          <Text style={[styles.backText, { color: colors.textPrimary }]}>{t('voltar')}</Text>
         </TouchableOpacity>
 
         <View style={styles.header}>
           <View style={styles.stepsInfo}>
-            <Text style={[styles.stepLabel, { color: colors.primary }]}>ETAPA 3 DE 3</Text>
-            <Text style={[styles.stepStatus, { color: colors.textSecondary }]}>FINALIZANDO</Text>
+            <Text style={[styles.stepLabel, { color: colors.primary }]}>
+              {t('etapaNdeN', { atual: 3, total: 3 }).toUpperCase()}
+            </Text>
+            <Text style={[styles.stepStatus, { color: colors.textSecondary }]}>
+              {t('finalizando').toUpperCase()}
+            </Text>
           </View>
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
             <View style={[styles.progressActive, { width: '100%', backgroundColor: colors.primary }]} />
           </View>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Dados do veterinário</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t('dadosVeterinario')}</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Insira as informações profissionais para concluir a configuração.
+            {t('subtituloRegistroVet')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
@@ -55,7 +61,7 @@ const RegisterVet = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL DO VETERINÁRIO</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('emailVeterinario').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
@@ -74,7 +80,7 @@ const RegisterVet = ({ navigation }) => {
           style={[styles.buttonFinalize, { backgroundColor: dark ? '#2D447B' : colors.primary }]}
           onPress={handleFinalize}
         >
-          <Text style={[styles.buttonTextFinalize, { color: dark ? '#FFF' : '#000' }]}>Finalizar Cadastro</Text>
+          <Text style={[styles.buttonTextFinalize, { color: dark ? '#FFF' : '#000' }]}>{t('finalizarCadastro')}</Text>
           <Feather name="check-circle" size={20} color={dark ? '#FFF' : '#000'} />
         </TouchableOpacity>
 
@@ -82,6 +88,8 @@ const RegisterVet = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
+// ... Estilos permanecem os mesmos
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

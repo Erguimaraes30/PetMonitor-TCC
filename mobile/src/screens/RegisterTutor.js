@@ -3,9 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Stat
 import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { DataContext } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext'; // Hook de tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // 1. Importação
 
 const RegisterTutor = ({ navigation }) => {
+  const { t } = useTranslation(); // 2. Hook de tradução
   const { colors, dark } = useTheme();
   const { updateTutorData } = useContext(DataContext);
   
@@ -28,19 +30,19 @@ const RegisterTutor = ({ navigation }) => {
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
             <View style={[styles.progressActive, { width: '33%', backgroundColor: colors.primary }]} />
           </View>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Bem-vindo ao PetMonitor</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t('bemVindo')}</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Inicie o monitoramento clínico do seu pet preenchendo os dados do tutor.
+            {t('subtituloRegistroTutor')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
-                placeholder="Como devemos te chamar?" 
+                placeholder={t('placeholderNomeTutor')} 
                 placeholderTextColor={colors.textSecondary} 
                 value={nome} 
                 onChangeText={setNome} 
@@ -65,7 +67,7 @@ const RegisterTutor = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('email').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
@@ -81,11 +83,11 @@ const RegisterTutor = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>SENHA</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('senha').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
-                placeholder="Digite sua senha" 
+                placeholder={t('placeholderSenha')} 
                 placeholderTextColor={colors.textSecondary} 
                 secureTextEntry 
                 value={senha} 
@@ -101,7 +103,7 @@ const RegisterTutor = ({ navigation }) => {
             style={[styles.buttonPrimary, { backgroundColor: colors.primary }]}
             onPress={handleNext}
           >
-            <Text style={styles.buttonText}>Próximo</Text>
+            <Text style={styles.buttonText}>{t('proximo')}</Text>
             <Feather name="arrow-right" size={20} color="#000" />
           </TouchableOpacity>
           
@@ -110,7 +112,7 @@ const RegisterTutor = ({ navigation }) => {
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.loginText, { color: colors.textSecondary }]}>
-              Já possui uma conta? <Text style={[styles.loginTextBold, { color: colors.primary }]}>Entrar</Text>
+              {t('jaPossuiConta')} <Text style={[styles.loginTextBold, { color: colors.primary }]}>{t('entrar')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -119,6 +121,8 @@ const RegisterTutor = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
+// ... Estilos permanecem os mesmos
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

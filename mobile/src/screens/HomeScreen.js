@@ -7,7 +7,8 @@ import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
 import { DataContext } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext'; // Importação do tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // Adicionado
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
@@ -18,7 +19,7 @@ function getStatus(bpm) {
   if (bpm < 60) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
   if (bpm > 140) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
   if (bpm > 120) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENÇÃO' };
-  return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' }; // Verde fixo para sucesso
+  return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
 }
 
 function MiniGraph({ data, strokeColor }) {
@@ -49,8 +50,9 @@ function MiniGraph({ data, strokeColor }) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { t } = useTranslation(); // Adicionado
   const { petData } = useContext(DataContext);
-  const { dark, colors } = useTheme(); // Hook de tema
+  const { dark, colors } = useTheme();
   
   const [bpm, setBpm] = useState(82);
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(82));
@@ -79,16 +81,14 @@ export default function HomeScreen({ navigation }) {
 
   const status = getStatus(bpm);
   const diff = bpm - mediaRef.current;
-  const diffText = diff > 0 ? `+${diff} BPM ACIMA DA MÉDIA` : diff < 0 ? `${diff} BPM ABAIXO DA MÉDIA` : 'NA MÉDIA';
+  const diffText = diff > 0 ? `+${diff} ${t('acimaDaMedia')}` : diff < 0 ? `${diff} ${t('abaixoDaMedia')}` : t('naMédia');
   
-  // Cores de status adaptadas
   const globalColor = status.global === 'NORMAL' ? colors.success : status.global === 'ATENÇÃO' ? '#FFB74D' : colors.error;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <View style={styles.headerLeft}>
           <View style={[styles.avatar, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -99,7 +99,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerRight}>
           <View style={[styles.harnessbadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.harnessOnlineDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>Harness: Online</Text>
+            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>{t('harnessOnline')}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
             <Feather name="settings" size={22} color={colors.textSecondary} />
@@ -109,26 +109,24 @@ export default function HomeScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Card Status Global */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statusRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS GLOBAL</Text>
-              <Text style={[styles.statusValue, { color: globalColor }]}>{status.global}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusGlobal')}</Text>
+              <Text style={[styles.statusValue, { color: globalColor }]}>{t(status.global.toLowerCase())}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINCRONIZADO</Text>
-              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>Última atualização:</Text>
-              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{lastUpdate}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('sincronizado')}</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{t('ultimaAtualizacao')}</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{t(lastUpdate)}</Text>
             </View>
           </View>
         </View>
 
-        {/* Card BPM + Gráfico */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.bpmRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>FREQUÊNCIA{'\n'}CARDÍACA</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('frequenciaCardiaca')}</Text>
               <View style={styles.bpmValueRow}>
                 <Text style={[styles.bpmNumber, { color: colors.textPrimary }]}>{bpm}</Text>
                 <Text style={[styles.bpmUnit, { color: colors.textSecondary }]}> BPM</Text>
@@ -143,34 +141,32 @@ export default function HomeScreen({ navigation }) {
             <MiniGraph data={history} strokeColor={colors.primary} />
             <View style={styles.graphLabels}>
               <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>-60 MIN</Text>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>AGORA</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{t('agora').toUpperCase()}</Text>
             </View>
           </View>
         </View>
 
-        {/* Botão Histórico */}
         <TouchableOpacity
           style={[styles.historyButton, { backgroundColor: colors.card, borderColor: colors.primary + '44' }]}
           onPress={() => navigation.navigate('Historico')}
         >
           <Feather name="clock" size={18} color={colors.primary} style={{ marginRight: 10 }} />
-          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>Ver Histórico Detalhado</Text>
+          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>{t('verHistorico')}</Text>
           <Feather name="chevron-right" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
-        {/* Card IA Engine */}
         <View style={[styles.iaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.iaBadge, { backgroundColor: colors.primary + '11' }]}>
-            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>IA ENGINE</Text>
+            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>{t('iaEngine')}</Text>
           </View>
           <TouchableOpacity 
             activeOpacity={0.8}
             onPress={() => navigation.navigate('ResumoDetalhado')}
           >
-            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>ATIVIDADE (Inferida)</Text>
-            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>Resumo Detalhado</Text>
+            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>{t('atividadeInferida')}</Text>
+            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>{t('resumoDetalhado')}</Text>
             <Text style={[styles.iaBody, { color: colors.textSecondary }]}>
-              Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
+              {t('resumoBody')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -179,6 +175,7 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

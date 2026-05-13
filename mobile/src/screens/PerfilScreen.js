@@ -6,9 +6,11 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
 import { DataContext } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext'; // Importe o hook de tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // 1. Importação necessária
 
 export default function PerfilScreen({ navigation }) {
+  const { t } = useTranslation(); // 2. Hook de tradução
   const { colors, dark } = useTheme();
   const { tutorData, updateTutorData, petData, updatePetData, vetData, updateVetData } = useContext(DataContext);
   
@@ -43,7 +45,7 @@ export default function PerfilScreen({ navigation }) {
           <View style={[styles.avatar, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="github" size={20} color={colors.primary} />
           </View>
-          <Text style={[styles.petName, { color: colors.textPrimary }]}>{petData.nome || 'Pet'}</Text>
+          <Text style={[styles.petName, { color: colors.textPrimary }]}>{petData.nome || t('pet')}</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Feather name="settings" size={22} color={colors.textSecondary} />
@@ -55,47 +57,47 @@ export default function PerfilScreen({ navigation }) {
         {/* Dados do Tutor */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>DADOS DO TUTOR</Text>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('dadosTutor').toUpperCase()}</Text>
             <TouchableOpacity onPress={openTutorModal}>
               <Feather name="edit-2" size={16} color={colors.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
-            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.nome || 'Não preenchido'}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
+            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.nome || t('naoPreenchido')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>CONTATO</Text>
-            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.whatsapp || 'Não preenchido'}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('contato').toUpperCase()}</Text>
+            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.whatsapp || t('naoPreenchido')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>E-MAIL</Text>
-            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.email || 'Não preenchido'}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('email').toUpperCase()}</Text>
+            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{tutorData.email || t('naoPreenchido')}</Text>
           </View>
         </View>
 
         {/* Dados do Veterinário */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>DADOS DO VETERINÁRIO</Text>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('dadosVeterinario').toUpperCase()}</Text>
             <TouchableOpacity onPress={openVetModal}>
               <Feather name="edit-2" size={16} color={colors.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
-            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{vetData.nome || 'Não preenchido'}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
+            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{vetData.nome || t('naoPreenchido')}</Text>
           </View>
           <View style={styles.field}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>E-MAIL</Text>
-            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{vetData.email || 'Não preenchido'}</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{t('email').toUpperCase()}</Text>
+            <Text style={[styles.fieldValue, { color: colors.textPrimary }]}>{vetData.email || t('naoPreenchido')}</Text>
           </View>
         </View>
 
         {/* Dados do Pet */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>DADOS DO PET</Text>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('dadosPet').toUpperCase()}</Text>
             <TouchableOpacity onPress={openPetModal}>
               <Feather name="edit-3" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -105,9 +107,9 @@ export default function PerfilScreen({ navigation }) {
               <Feather name="github" size={24} color={colors.primary} />
             </View>
             <View>
-              <Text style={[styles.petName2, { color: colors.textPrimary }]}>{petData.nome || 'Não preenchido'}</Text>
+              <Text style={[styles.petName2, { color: colors.textPrimary }]}>{petData.nome || t('naoPreenchido')}</Text>
               <Text style={[styles.petBreed, { color: colors.textSecondary }]}>
-                {petData.raca ? `${petData.raca} • ${petData.idade} anos` : 'Não preenchido'}
+                {petData.raca ? `${petData.raca} • ${petData.idade} ${t('anos')}` : t('naoPreenchido')}
               </Text>
             </View>
           </View>
@@ -118,14 +120,14 @@ export default function PerfilScreen({ navigation }) {
           <View style={styles.cardHeader}>
             <View style={styles.limiteTitleRow}>
               <Feather name="bar-chart-2" size={16} color={colors.primary} style={{ marginRight: 8 }} />
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>LIMITES DE ALERTA (BPM)</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('limitesAlertaBpm').toUpperCase()}</Text>
             </View>
           </View>
 
           <View style={styles.limiteRow}>
             <View style={styles.limiteInfo}>
-              <Text style={[styles.limiteTitle, { color: colors.textPrimary }]}>BPM Mínimo</Text>
-              <Text style={[styles.limiteSubtitle, { color: colors.textSecondary }]}>Alerta abaixo deste valor</Text>
+              <Text style={[styles.limiteTitle, { color: colors.textPrimary }]}>{t('bpmMinimo')}</Text>
+              <Text style={[styles.limiteSubtitle, { color: colors.textSecondary }]}>{t('alertaAbaixo')}</Text>
             </View>
             <View style={[styles.counter, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <TouchableOpacity style={styles.counterBtn} onPress={() => setBpmMin(v => Math.max(40, v - 1))}>
@@ -142,8 +144,8 @@ export default function PerfilScreen({ navigation }) {
 
           <View style={styles.limiteRow}>
             <View style={styles.limiteInfo}>
-              <Text style={[styles.limiteTitle, { color: colors.textPrimary }]}>BPM Máximo</Text>
-              <Text style={[styles.limiteSubtitle, { color: colors.textSecondary }]}>Alerta acima deste valor</Text>
+              <Text style={[styles.limiteTitle, { color: colors.textPrimary }]}>{t('bpmMaximo')}</Text>
+              <Text style={[styles.limiteSubtitle, { color: colors.textSecondary }]}>{t('alertaAcima')}</Text>
             </View>
             <View style={[styles.counter, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <TouchableOpacity style={styles.counterBtn} onPress={() => setBpmMax(v => Math.max(bpmMin + 1, v - 1))}>
@@ -163,7 +165,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>EDITAR DADOS DO TUTOR</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('editarDadosTutor').toUpperCase()}</Text>
               <TouchableOpacity onPress={() => setTutorModalVisible(false)}>
                 <Feather name="x" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -171,10 +173,10 @@ export default function PerfilScreen({ navigation }) {
 
             <ScrollView style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Nome completo"
+                  placeholder={t('placeholderNomeCompleto')}
                   placeholderTextColor={colors.textSecondary}
                   value={editTutor.nome}
                   onChangeText={(text) => setEditTutor({...editTutor, nome: text})}
@@ -194,7 +196,7 @@ export default function PerfilScreen({ navigation }) {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('email').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                   placeholder="email@exemplo.com"
@@ -208,10 +210,10 @@ export default function PerfilScreen({ navigation }) {
 
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity style={[styles.buttonSecondary, { borderColor: colors.border }]} onPress={() => setTutorModalVisible(false)}>
-                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>CANCELAR</Text>
+                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>{t('cancelar').toUpperCase()}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.buttonPrimary, { backgroundColor: colors.primary }]} onPress={saveTutorData}>
-                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+                <Text style={styles.buttonPrimaryText}>{t('salvar').toUpperCase()}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -223,7 +225,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>EDITAR DADOS DO VETERINÁRIO</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('editarDadosVeterinario').toUpperCase()}</Text>
               <TouchableOpacity onPress={() => setVetModalVisible(false)}>
                 <Feather name="x" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -231,10 +233,10 @@ export default function PerfilScreen({ navigation }) {
 
             <ScrollView style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>NOME COMPLETO</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nomeCompleto').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Nome do veterinário"
+                  placeholder={t('placeholderNomeVet')}
                   placeholderTextColor={colors.textSecondary}
                   value={editVet.nome}
                   onChangeText={(text) => setEditVet({...editVet, nome: text})}
@@ -242,7 +244,7 @@ export default function PerfilScreen({ navigation }) {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('email').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                   placeholder="email@veterinario.com"
@@ -256,10 +258,10 @@ export default function PerfilScreen({ navigation }) {
 
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity style={[styles.buttonSecondary, { borderColor: colors.border }]} onPress={() => setVetModalVisible(false)}>
-                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>CANCELAR</Text>
+                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>{t('cancelar').toUpperCase()}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.buttonPrimary, { backgroundColor: colors.primary }]} onPress={saveVetData}>
-                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+                <Text style={styles.buttonPrimaryText}>{t('salvar').toUpperCase()}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -271,7 +273,7 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>EDITAR DADOS DO PET</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('editarDadosPet').toUpperCase()}</Text>
               <TouchableOpacity onPress={() => setPetModalVisible(false)}>
                 <Feather name="x" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -279,10 +281,10 @@ export default function PerfilScreen({ navigation }) {
 
             <ScrollView style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>NOME</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nome').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Nome do pet"
+                  placeholder={t('placeholderNomePet')}
                   placeholderTextColor={colors.textSecondary}
                   value={editPet.nome}
                   onChangeText={(text) => setEditPet({...editPet, nome: text})}
@@ -290,10 +292,10 @@ export default function PerfilScreen({ navigation }) {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>RAÇA</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{t('raca').toUpperCase()}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Raça do pet"
+                  placeholder={t('placeholderRacaPet')}
                   placeholderTextColor={colors.textSecondary}
                   value={editPet.raca}
                   onChangeText={(text) => setEditPet({...editPet, raca: text})}
@@ -302,7 +304,7 @@ export default function PerfilScreen({ navigation }) {
 
               <View style={styles.row}>
                 <View style={[styles.inputGroup, {flex: 1, marginRight: 8}]}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>PESO (KG)</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>{t('pesoKg').toUpperCase()}</Text>
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="0.0"
@@ -313,7 +315,7 @@ export default function PerfilScreen({ navigation }) {
                   />
                 </View>
                 <View style={[styles.inputGroup, {flex: 1, marginLeft: 8}]}>
-                  <Text style={[styles.label, { color: colors.textSecondary }]}>IDADE (ANOS)</Text>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>{t('idadeAnos').toUpperCase()}</Text>
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
                     placeholder="0"
@@ -328,10 +330,10 @@ export default function PerfilScreen({ navigation }) {
 
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
               <TouchableOpacity style={[styles.buttonSecondary, { borderColor: colors.border }]} onPress={() => setPetModalVisible(false)}>
-                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>CANCELAR</Text>
+                <Text style={[styles.buttonSecondaryText, { color: colors.textPrimary }]}>{t('cancelar').toUpperCase()}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.buttonPrimary, { backgroundColor: colors.primary }]} onPress={savePetData}>
-                <Text style={styles.buttonPrimaryText}>SALVAR</Text>
+                <Text style={styles.buttonPrimaryText}>{t('salvar').toUpperCase()}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -341,6 +343,7 @@ export default function PerfilScreen({ navigation }) {
   );
 }
 
+// ... Estilos permanecem os mesmos
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {

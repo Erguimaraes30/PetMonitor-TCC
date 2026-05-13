@@ -5,7 +5,9 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
-import { useTheme } from '../context/ThemeContext'; // Importe o hook
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -20,17 +22,15 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function SettingsScreen({ navigation }) {
-  // Estados de controle local
   const [emailAlertas, setEmailAlertas] = useState(true);
   const [pushAlertas, setPushAlertas] = useState(true);
-  const [idioma, setIdioma] = useState('pt');
 
-  // Hook do Tema Global
   const { dark, toggleTheme, colors } = useTheme();
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* StatusBar reage ao tema */}
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
@@ -38,17 +38,17 @@ export default function SettingsScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Feather name="chevron-left" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Configurações</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('configuracoes')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Seção de Conta */}
+        {/* Conta */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>CONTA</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('conta')}</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingRow}
               onPress={() => navigation.navigate('MainApp', { screen: 'Perfil' })}
             >
@@ -56,8 +56,8 @@ export default function SettingsScreen({ navigation }) {
                 <Feather name="user" size={18} color={colors.primary} />
               </View>
               <View style={styles.settingInfo}>
-                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Perfil do Tutor</Text>
-                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>Editar informações pessoais</Text>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>{t('perfilTutor')}</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{t('editarInfo')}</Text>
               </View>
               <Feather name="chevron-right" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -66,15 +66,15 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Notificações */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>NOTIFICAÇÕES</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('notificacoes')}</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.notifRow}>
               <View style={[styles.notifIcon, { backgroundColor: colors.error + '22' }]}>
                 <Feather name="mail" size={18} color={colors.error} />
               </View>
               <View style={styles.notifInfo}>
-                <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>Alertas via E-mail</Text>
-                <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>Notificações críticas</Text>
+                <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('alertasEmail')}</Text>
+                <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>{t('notifCriticas')}</Text>
               </View>
               <Switch
                 value={emailAlertas}
@@ -91,8 +91,8 @@ export default function SettingsScreen({ navigation }) {
                 <Feather name="bell" size={18} color={colors.primary} />
               </View>
               <View style={styles.notifInfo}>
-                <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>Notificações Push</Text>
-                <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>Alertas em tempo real</Text>
+                <Text style={[styles.notifTitle, { color: colors.textPrimary }]}>{t('notifPush')}</Text>
+                <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>{t('alertasTempoReal')}</Text>
               </View>
               <Switch
                 value={pushAlertas}
@@ -104,16 +104,14 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Aparência - FUNCIONAL AGORA */}
+        {/* Aparência */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>APARÊNCIA</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('aparencia')}</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.settingLabel, { color: colors.textSecondary }]}>TEMA</Text>
+            <Text style={[styles.settingLabel, { color: colors.textSecondary }]}>{t('tema')}</Text>
             <View style={styles.themeGrid}>
               {THEME_OPTIONS.map((option) => {
-                // Checa se a opção renderizada é a que está ativa no Contexto
                 const isActive = (option.key === 'dark' && dark) || (option.key === 'light' && !dark);
-                
                 return (
                   <TouchableOpacity
                     key={option.key}
@@ -123,22 +121,10 @@ export default function SettingsScreen({ navigation }) {
                       { borderColor: colors.border },
                       isActive && { borderColor: colors.primary, backgroundColor: colors.primary + '11' }
                     ]}
-                    onPress={() => {
-                      // Só troca se clicar no que não está ativo
-                      if (!isActive) toggleTheme();
-                    }}
+                    onPress={() => { if (!isActive) toggleTheme(); }}
                   >
-                    <View
-                      style={[
-                        styles.themePreview,
-                        { backgroundColor: option.color, borderColor: colors.border }
-                      ]}
-                    />
-                    <Text style={[
-                      styles.themeLabel,
-                      { color: colors.textPrimary },
-                      isActive && { color: colors.primary }
-                    ]}>
+                    <View style={[styles.themePreview, { backgroundColor: option.color, borderColor: colors.border }]} />
+                    <Text style={[styles.themeLabel, { color: colors.textPrimary }, isActive && { color: colors.primary }]}>
                       {option.label}
                     </Text>
                   </TouchableOpacity>
@@ -150,25 +136,25 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Idioma */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>IDIOMA</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('idioma')}</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {LANGUAGE_OPTIONS.map((option, index) => (
               <View key={option.key}>
                 <TouchableOpacity
                   style={styles.languageOption}
-                  onPress={() => setIdioma(option.key)}
+                  onPress={() => changeLanguage(option.key)}
                 >
                   <View style={styles.languageContent}>
                     <View style={[
-                        styles.radioButton,
-                        { borderColor: colors.border },
-                        idioma === option.key && { borderColor: colors.primary }
+                      styles.radioButton,
+                      { borderColor: colors.border },
+                      language === option.key && { borderColor: colors.primary }
                     ]}>
-                      {idioma === option.key && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
+                      {language === option.key && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
                     </View>
                     <Text style={[styles.languageLabel, { color: colors.textPrimary }]}>{option.label}</Text>
                   </View>
-                  {idioma === option.key && <Feather name="check" size={18} color={colors.primary} />}
+                  {language === option.key && <Feather name="check" size={18} color={colors.primary} />}
                 </TouchableOpacity>
                 {index < LANGUAGE_OPTIONS.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
               </View>
@@ -181,7 +167,7 @@ export default function SettingsScreen({ navigation }) {
           style={[styles.logoutBtn, { borderColor: colors.error }]}
           onPress={() => navigation.replace('Login')}
         >
-          <Text style={[styles.logoutText, { color: colors.error }]}>LOGOUT DA CONTA</Text>
+          <Text style={[styles.logoutText, { color: colors.error }]}>{t('logout')}</Text>
         </TouchableOpacity>
 
       </ScrollView>

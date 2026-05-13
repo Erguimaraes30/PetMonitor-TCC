@@ -6,12 +6,13 @@ import HomeScreen from '../screens/HomeScreen';
 import AlertasScreen from '../screens/AlertasScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import { useTheme } from '../context/ThemeContext'; // Importe o hook de tema
+import { useTranslation } from 'react-i18next';
 
 const Tab = createBottomTabNavigator();
 
 export default function Tabs() {
   const { colors } = useTheme(); // Acessando as cores do tema atual
-
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -40,22 +41,22 @@ export default function Tabs() {
       <Tab.Screen 
         name="Monitor" 
         component={HomeScreen} 
-        options={{ title: 'Monitor' }} 
+        options={{ title: t('Monitor') }} 
       />
       <Tab.Screen 
         name="Historico" 
         component={HistoricoScreen} 
-        options={{ title: 'Histórico' }} 
+        options={{ title: t('Historico') }} 
       />
       <Tab.Screen 
         name="Alertas" 
         component={AlertasScreen} 
-        options={{ title: 'Alertas' }} 
+        options={{ title: t('Alertas') }} 
       />
       <Tab.Screen 
         name="Perfil" 
         component={PerfilScreen} 
-        options={{ title: 'Perfil' }} 
+        options={{ title: t('Perfil') }} 
       />
     </Tab.Navigator>
   );

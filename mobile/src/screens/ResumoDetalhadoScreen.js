@@ -5,7 +5,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
-import { useTheme } from '../context/ThemeContext'; // Importe o hook
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // Adicionado para tradução
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 64;
@@ -13,7 +14,6 @@ const GRAPH_HEIGHT = 60;
 
 const MOCK_BPM = [72, 75, 70, 68, 74, 73, 71, 72, 76, 72, 69, 72, 74, 72, 71];
 
-// O Gráfico agora recebe as cores dinamicamente
 function MiniGraph({ data, strokeColor }) {
   if (data.length < 2) return null;
   const min = Math.min(...data) - 5;
@@ -30,8 +30,8 @@ function MiniGraph({ data, strokeColor }) {
       <Polyline
         points={points}
         fill="none"
-        stroke={strokeColor} // Cor dinâmica aqui
-        strokeWidth="2"
+        stroke={strokeColor}
+        strokeWidth="2.5"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -40,7 +40,8 @@ function MiniGraph({ data, strokeColor }) {
 }
 
 export default function ResumoDetalhadoScreen({ navigation }) {
-  const { dark, colors } = useTheme(); // Pega o tema global
+  const { t } = useTranslation(); // Hook de tradução
+  const { dark, colors } = useTheme();
 
   const media = Math.round(MOCK_BPM.reduce((a, b) => a + b, 0) / MOCK_BPM.length);
   const minimo = Math.min(...MOCK_BPM);
@@ -58,11 +59,14 @@ export default function ResumoDetalhadoScreen({ navigation }) {
         >
           <Feather name="arrow-left" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Resumo Detalhado</Text>
-        <TouchableOpacity>
-                    <Feather name="settings" size={22} color={colors.textSecondary} 
-                    onPress={() => navigation.navigate('Settings')}/>
-                  </TouchableOpacity>
+        
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          {t('resumoDetalhado')}
+        </Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Feather name="settings" size={22} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -70,8 +74,10 @@ export default function ResumoDetalhadoScreen({ navigation }) {
         {/* BPM Médio */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>BPM MÉDIO NO PERÍODO</Text>
-            <Feather name="refresh-cw" size={16} color={colors.textSecondary} />
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>
+              {t('bpmMedioPeriodo').toUpperCase()}
+            </Text>
+            <Feather name="activity" size={16} color={colors.primary} />
           </View>
           <View style={styles.bpmRow}>
             <Text style={[styles.bpmValue, { color: colors.textPrimary }]}>{media}</Text>
@@ -79,11 +85,11 @@ export default function ResumoDetalhadoScreen({ navigation }) {
           </View>
           <View style={styles.minMaxRow}>
             <View>
-              <Text style={[styles.minMaxLabel, { color: colors.textSecondary }]}>MÍNIMO</Text>
+              <Text style={[styles.minMaxLabel, { color: colors.textSecondary }]}>{t('minimo').toUpperCase()}</Text>
               <Text style={[styles.minMaxValue, { color: colors.textPrimary }]}>{minimo}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[styles.minMaxLabel, { color: colors.textSecondary }]}>PICO</Text>
+              <Text style={[styles.minMaxLabel, { color: colors.textSecondary }]}>{t('pico').toUpperCase()}</Text>
               <Text style={[styles.minMaxValue, { color: colors.textPrimary }]}>{pico}</Text>
             </View>
           </View>
@@ -95,33 +101,32 @@ export default function ResumoDetalhadoScreen({ navigation }) {
         {/* Resumo Mensal */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>RESUMO MENSAL</Text>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('resumoMensal').toUpperCase()}</Text>
             <Feather name="smartphone" size={16} color={colors.textSecondary} />
           </View>
-          <Text style={[styles.estabilidade, { color: colors.textPrimary }]}>Estabilidade: Alta</Text>
-          <Text style={[styles.resumoBody, { color: colors.textSecondary }]}>
-            Seu pet apresentou estabilidade alta durante o período. A movimentação mínima detectada sugere um estado de repouso estável.
+          <Text style={[styles.estabilidade, { color: colors.textPrimary }]}>
+            {t('estabilidade').toUpperCase()}: {t('alta').toUpperCase()}
           </Text>
         </View>
 
         {/* Status do Hardware */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS DO HARDWARE</Text>
-            <Feather name="wifi" size={16} color={colors.textSecondary} />
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusHardware').toUpperCase()}</Text>
+            <Feather name="cpu" size={16} color={colors.textSecondary} />
           </View>
           <View style={styles.hardwareRow}>
             <View style={styles.hardwareItem}>
               <View style={styles.hardwareItemHeader}>
                 <Feather name="wifi" size={14} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={[styles.hardwareLabel, { color: colors.textSecondary }]}>Sinal</Text>
+                <Text style={[styles.hardwareLabel, { color: colors.textSecondary }]}>{t('sinal')}</Text>
               </View>
               <Text style={[styles.hardwareValue, { color: colors.textPrimary }]}>-45 dBm</Text>
             </View>
             <View style={styles.hardwareItem}>
               <View style={styles.hardwareItemHeader}>
                 <Feather name="battery-charging" size={14} color={colors.success} style={{ marginRight: 4 }} />
-                <Text style={[styles.hardwareLabel, { color: colors.textSecondary }]}>Bateria</Text>
+                <Text style={[styles.hardwareLabel, { color: colors.textSecondary }]}>{t('bateria')}</Text>
               </View>
               <Text style={[styles.hardwareValue, { color: colors.textPrimary }]}>84%</Text>
             </View>
@@ -129,7 +134,7 @@ export default function ResumoDetalhadoScreen({ navigation }) {
           <View style={styles.conexaoRow}>
             <View style={[styles.conexaoDot, { backgroundColor: colors.success }]} />
             <Text style={[styles.conexaoText, { color: colors.textSecondary }]}>
-              Conexão estável. Última sincronização: Agora.
+              {t('conexaoEstavel')}
             </Text>
           </View>
         </View>
@@ -139,6 +144,7 @@ export default function ResumoDetalhadoScreen({ navigation }) {
   );
 }
 
+// ... styles permanecem os mesmos
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {

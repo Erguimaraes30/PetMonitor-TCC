@@ -5,10 +5,13 @@ import {
 } from 'react-native';
 import { SIZES } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext'; // Importação do tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const LoginScreen = ({ navigation }) => {
-  const { colors, dark } = useTheme(); // Acesso às cores dinâmicas
+  const { colors, dark } = useTheme();
+  const { t } = useTranslation();
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,19 +20,16 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     if (!email || !senha) {
-      setErro('Preencha todos os campos');
+      setErro(t('preenchaCampos'));
       return;
     }
-
     setLoading(true);
     setErro('');
-
     try {
-      // Simulação de login
       await new Promise(resolve => setTimeout(resolve, 1500));
       navigation.replace('MainApp');
     } catch (error) {
-      setErro('E-mail ou senha incorretos');
+      setErro(t('emailSenhaErrados'));
     } finally {
       setLoading(false);
     }
@@ -48,17 +48,17 @@ const LoginScreen = ({ navigation }) => {
             <Feather name="heart" size={40} color={colors.primary} />
           </View>
           <Text style={[styles.appName, { color: colors.textPrimary }]}>PetMonitor</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Monitoramento Clínico do Seu Pet</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('loginSubtitle')}</Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>E-MAIL</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('email')}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}
-                placeholder="seu@email.com"
+                placeholder={t('emailPlaceholder')}
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -71,7 +71,7 @@ const LoginScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>SENHA</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('senha')}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}
@@ -83,11 +83,7 @@ const LoginScreen = ({ navigation }) => {
                 editable={!loading}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Feather
-                  name={showPassword ? 'eye' : 'eye-off'}
-                  size={20}
-                  color={colors.textSecondary}
-                />
+                <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -101,10 +97,10 @@ const LoginScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.forgotButton}
-            onPress={() => alert('Em breve!')}
+            onPress={() => alert(t('emBreve') || 'Em breve!')}
             disabled={loading}
           >
-            <Text style={[styles.forgotText, { color: colors.primary }]}>Esqueceu a senha?</Text>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>{t('esqueceuSenha')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -118,13 +114,13 @@ const LoginScreen = ({ navigation }) => {
             {loading ? (
               <ActivityIndicator color="#000" size="small" />
             ) : (
-              <Text style={styles.buttonText}>ENTRAR</Text>
+              <Text style={styles.buttonText}>{t('entrar')}</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OU</Text>
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>{t('ou')}</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -133,13 +129,14 @@ const LoginScreen = ({ navigation }) => {
             onPress={() => navigation.replace('RegisterTutor')}
             disabled={loading}
           >
-            <Text style={[styles.buttonSecondaryText, { color: colors.primary }]}>CRIAR NOVA CONTA</Text>
+            <Text style={[styles.buttonSecondaryText, { color: colors.primary }]}>{t('criarConta')}</Text>
           </TouchableOpacity>
 
           <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
-            Ao continuar, você concorda com nossos{' '}
-            <Text style={[styles.link, { color: colors.primary }]}>Termos de Serviço</Text> e{' '}
-            <Text style={[styles.link, { color: colors.primary }]}>Política de Privacidade</Text>
+            {t('disclaimer')}{' '}
+            <Text style={[styles.link, { color: colors.primary }]}>{t('termos')}</Text>
+            {' '}{t('disclaimerE')}{' '}
+            <Text style={[styles.link, { color: colors.primary }]}>{t('politica')}</Text>
           </Text>
         </View>
       </KeyboardAvoidingView>

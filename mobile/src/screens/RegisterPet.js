@@ -3,9 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import { SIZES } from '../constants/theme';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { DataContext } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext'; // Hook de tema
+import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next'; // 1. Importação
 
 const RegisterPet = ({ navigation }) => {
+  const { t } = useTranslation(); // 2. Hook de tradução
   const { colors, dark } = useTheme();
   const { updatePetData } = useContext(DataContext);
   
@@ -27,22 +29,22 @@ const RegisterPet = ({ navigation }) => {
 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={24} color={colors.textPrimary} />
-          <Text style={[styles.backText, { color: colors.textPrimary }]}>Voltar</Text>
+          <Text style={[styles.backText, { color: colors.textPrimary }]}>{t('voltar')}</Text>
         </TouchableOpacity>
         
         <View style={styles.header}>
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
             <View style={[styles.progressActive, { width: '66%', backgroundColor: colors.primary }]} />
           </View>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Sobre o seu Pet</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{t('sobreSeuPet')}</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Precisamos de alguns detalhes técnicos para calibrar os sensores de saúde.
+            {t('subtituloRegistroPet')}
           </Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>NOME</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('nome').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
@@ -55,22 +57,21 @@ const RegisterPet = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>RAÇA</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('raca').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput 
                 style={[styles.input, { color: colors.textPrimary }]} 
-                placeholder="Busque a raça" 
+                placeholder={t('placeholderRaca')} 
                 placeholderTextColor={colors.textSecondary} 
                 value={raca} 
                 onChangeText={setRaca} 
               />
-              <Feather name="search" size={20} color={colors.textSecondary} />
             </View>
           </View>
 
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>PESO (KG)</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('pesoKg').toUpperCase()}</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <TextInput 
                   style={[styles.input, { color: colors.textPrimary }]} 
@@ -83,7 +84,7 @@ const RegisterPet = ({ navigation }) => {
               </View>
             </View>
             <View style={[styles.inputGroup, { flex: 1, marginLeft: 10 }]}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>IDADE (ANOS)</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{t('idadeAnos').toUpperCase()}</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <TextInput 
                   style={[styles.input, { color: colors.textPrimary }]} 
@@ -97,7 +98,7 @@ const RegisterPet = ({ navigation }) => {
             </View>
           </View>
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>SEXO</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{t('sexo').toUpperCase()}</Text>
           <View style={styles.row}>
             <TouchableOpacity 
               style={[
@@ -111,7 +112,7 @@ const RegisterPet = ({ navigation }) => {
               onPress={() => setGender('M')}
             >
               <FontAwesome5 name="mars" size={18} color={gender === 'M' ? colors.primary : colors.textSecondary} />
-              <Text style={[styles.genderText, { color: colors.textSecondary }, gender === 'M' && { color: colors.primary }]}>MACHO</Text>
+              <Text style={[styles.genderText, { color: colors.textSecondary }, gender === 'M' && { color: colors.primary }]}>{t('macho').toUpperCase()}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -126,14 +127,14 @@ const RegisterPet = ({ navigation }) => {
               onPress={() => setGender('F')}
             >
               <FontAwesome5 name="venus" size={18} color={gender === 'F' ? colors.primary : colors.textSecondary} />
-              <Text style={[styles.genderText, { color: colors.textSecondary }, gender === 'F' && { color: colors.primary }]}>FÊMEA</Text>
+              <Text style={[styles.genderText, { color: colors.textSecondary }, gender === 'F' && { color: colors.primary }]}>{t('femea').toUpperCase()}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={[styles.infoCard, { backgroundColor: dark ? 'rgba(176, 196, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', borderColor: colors.border }]}>
             <Feather name="info" size={20} color={colors.primary} />
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              Estes dados ajudam a calcular a frequência cardíaca ideal para o porte do seu pet.
+              {t('infoDiferencialCalibragem')}
             </Text>
           </View>
         </View>
@@ -142,7 +143,7 @@ const RegisterPet = ({ navigation }) => {
           style={[styles.buttonPrimary, { backgroundColor: colors.primary }]}
           onPress={handleNext}
         >
-          <Text style={styles.buttonText}>Próximo</Text>
+          <Text style={styles.buttonText}>{t('proximo')}</Text>
           <Feather name="arrow-right" size={20} color="#000" />
         </TouchableOpacity>
 
