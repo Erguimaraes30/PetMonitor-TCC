@@ -8,23 +8,27 @@ import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
 import { DataContext } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
-import { useTranslation } from 'react-i18next'; // Adicionado
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 80;
 const MAX_POINTS = 30;
 
-function getStatus(bpm) {
-  if (bpm < 60) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
-  if (bpm > 140) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
-  if (bpm > 120) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENÇÃO' };
+// 1. getStatus agora considera os limites dinâmicos do contexto
+function getStatus(bpm, min, max) {
+  if (bpm < min) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
+  if (bpm > max) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
+  
+  // Define uma zona de atenção (15% antes de atingir o limite máximo)
+  const thresholdAtencao = max * 0.85;
+  if (bpm > thresholdAtencao) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENÇÃO' };
+  
   return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
 }
 
 function MiniGraph({ data, strokeColor }) {
   if (data.length < 2) return null;
-
   const min = Math.min(...data) - 5;
   const max = Math.max(...data) + 5;
   const range = max - min || 1;
@@ -50,8 +54,9 @@ function MiniGraph({ data, strokeColor }) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { t } = useTranslation(); // Adicionado
-  const { petData } = useContext(DataContext);
+  const { t } = useTranslation();
+  // 2. Extraindo petData e alertSettings do Contexto
+  const { petData, alertSettings } = useContext(DataContext);
   const { dark, colors } = useTheme();
   
   const [bpm, setBpm] = useState(82);
@@ -64,7 +69,8 @@ export default function HomeScreen({ navigation }) {
       setBpm(prev => {
         const variacao = Math.floor(Math.random() * 7) - 3;
         const novo = prev + variacao;
-        const final = (novo > 55 && novo < 150) ? novo : prev;
+        // Simulação mantém o BPM em uma faixa plausível
+        const final = (novo > 40 && novo < 220) ? novo : prev;
 
         setHistory(h => {
           const updated = [...h.slice(1), final];
@@ -79,7 +85,8 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(interval);
   }, []);
 
-  const status = getStatus(bpm);
+  // 3. Aplicando os limites dinâmicos para calcular o status
+  const status = getStatus(bpm, alertSettings.bpmMin, alertSettings.bpmMax);
   const diff = bpm - mediaRef.current;
   const diffText = diff > 0 ? `+${diff} ${t('acimaDaMedia')}` : diff < 0 ? `${diff} ${t('abaixoDaMedia')}` : t('naMédia');
   
@@ -113,6 +120,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.statusRow}>
             <View>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusGlobal')}</Text>
+              {/* O rótulo agora responde aos limites do alertSettings */}
               <Text style={[styles.statusValue, { color: globalColor }]}>{t(status.global.toLowerCase())}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
@@ -132,7 +140,8 @@ export default function HomeScreen({ navigation }) {
                 <Text style={[styles.bpmUnit, { color: colors.textSecondary }]}> BPM</Text>
               </View>
             </View>
-            <Text style={[styles.diffText, { color: diff > 10 ? '#FFB74D' : colors.textSecondary }]}>
+            {/* Cor de destaque se estiver longe da média */}
+            <Text style={[styles.diffText, { color: Math.abs(diff) > 15 ? '#FFB74D' : colors.textSecondary }]}>
               {diffText}
             </Text>
           </View>
@@ -155,6 +164,7 @@ export default function HomeScreen({ navigation }) {
           <Feather name="chevron-right" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
+        {/* ... Restante do card de IA permanece igual ... */}
         <View style={[styles.iaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.iaBadge, { backgroundColor: colors.primary + '11' }]}>
             <Text style={[styles.iaBadgeText, { color: colors.primary }]}>{t('iaEngine')}</Text>
@@ -176,6 +186,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
+// ... Estilos originais mantidos
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
