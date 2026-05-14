@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pydantic
+requests
+adafruit-io==2.0.0
+python-dotenv==1.0.0
+sqlalchemy==2.0.23
