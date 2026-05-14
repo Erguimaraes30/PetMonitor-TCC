@@ -50,6 +50,7 @@ const resources = {
       ontem:'Ontem',
       hoje:'Hoje',
       diasAtras:'dias atrás',
+      atencao: "ATENÇÃO",
       // Perfil
       pet: 'Pet',
     dadosTutor: 'Dados do Tutor',

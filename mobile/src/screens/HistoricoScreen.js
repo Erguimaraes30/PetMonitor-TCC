@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
-  TouchableOpacity, Dimensions
+  TouchableOpacity, Dimensions, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
@@ -12,46 +12,54 @@ import { useTranslation } from 'react-i18next';
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 100;
-
-// 1. MOCK_DATA com chaves minúsculas para facilitar a tradução no i18next
-const MOCK_DATA = {
-  hoje: [
-    { id: 1, hora: '14:20', bpm: 85, status: 'normal' },
-    { id: 2, hora: '13:45', bpm: 112, status: 'elevado' },
-    { id: 3, hora: '12:15', bpm: 82, status: 'normal' },
-    { id: 4, hora: '11:30', bpm: 78, status: 'normal' },
-    { id: 5, hora: '10:00', bpm: 134, status: 'alerta' },
-    { id: 6, hora: '09:15', bpm: 76, status: 'normal' },
-    { id: 7, hora: '08:00', bpm: 80, status: 'normal' },
-  ],
-  seteDias: [ 
-    { id: 1, hora: 'hoje', bpm: 85, status: 'normal' },
-    { id: 2, hora: 'ontem', bpm: 148, status: 'alerta' },
-    { id: 3, hora: 'seg', bpm: 79, status: 'normal' },
-    { id: 4, hora: 'dom', bpm: 82, status: 'normal' },
-    { id: 5, hora: 'sab', bpm: 91, status: 'normal' },
-    { id: 6, hora: 'sex', bpm: 118, status: 'elevado' },
-    { id: 7, hora: 'qui', bpm: 77, status: 'normal' },
-  ],
-  trintaDias: [
-    { id: 1, hora: 'semana4', bpm: 85, status: 'normal' },
-    { id: 2, hora: 'semana3', bpm: 102, status: 'elevado' },
-    { id: 3, hora: 'semana2', bpm: 78, status: 'normal' },
-    { id: 4, hora: 'semana1', bpm: 143, status: 'alerta' },
-  ],
-};
+const API_URL = 'http://192.168.15.126:8000';
+const PET_ID = 'pet_001';
 
 const FILTERS = [
-  { key: 'hoje' },
-  { key: 'seteDias' }, 
-  { key: 'trintaDias' },
+  { key: 'hoje',       label: 'hoje',       limit: 50  },
+  { key: 'seteDias',   label: 'seteDias',   limit: 200 },
+  { key: 'trintaDias', label: 'trintaDias', limit: 500 },
 ];
+
+function getStatusFromBpm(bpm) {
+  if (bpm > 140) return 'alerta';
+  if (bpm > 120) return 'elevado';
+  return 'normal';
+}
+
+function formatTimestamp(ts) {
+  const date = new Date(ts);
+  const agora = new Date();
+  const diffMs = agora - date;
+  const diffHoras = diffMs / (1000 * 60 * 60);
+  const diffDias = diffMs / (1000 * 60 * 60 * 24);
+
+  if (diffHoras < 24) {
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  } else if (diffDias < 7) {
+    return date.toLocaleDateString('pt-BR', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  } else {
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+}
+
+function filterByPeriod(dados, filterKey) {
+  const agora = new Date();
+  return dados.filter(d => {
+    const date = new Date(d.timestamp);
+    const diffMs = agora - date;
+    const diffDias = diffMs / (1000 * 60 * 60 * 24);
+    if (filterKey === 'hoje') return diffDias < 1;
+    if (filterKey === 'seteDias') return diffDias < 7;
+    return diffDias < 30;
+  });
+}
 
 function statusConfig(status, successColor, t) {
   switch (status) {
-    case 'alerta':   return { color: '#E57373', label: t('alerta'),  icon: 'alert-triangle' };
-    case 'elevado':  return { color: '#FFB74D', label: t('elevado'), icon: 'trending-up' };
-    default:         return { color: successColor, label: t('normal'), icon: 'heart' };
+    case 'alerta':  return { color: '#E57373', label: t('alerta'),  icon: 'alert-triangle' };
+    case 'elevado': return { color: '#FFB74D', label: t('elevado'), icon: 'trending-up' };
+    default:        return { color: successColor, label: t('normal'), icon: 'heart' };
   }
 }
 
@@ -61,23 +69,14 @@ function LineGraph({ data, strokeColor }) {
   const min = Math.min(...values) - 10;
   const max = Math.max(...values) + 10;
   const range = max - min || 1;
-
   const points = values.map((val, i) => {
     const x = (i / (values.length - 1)) * GRAPH_WIDTH;
     const y = GRAPH_HEIGHT - ((val - min) / range) * GRAPH_HEIGHT;
     return `${x},${y}`;
   }).join(' ');
-
   return (
     <Svg width={GRAPH_WIDTH} height={GRAPH_HEIGHT}>
-      <Polyline
-        points={points}
-        fill="none"
-        stroke={strokeColor}
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      <Polyline points={points} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
     </Svg>
   );
 }
@@ -85,27 +84,59 @@ function LineGraph({ data, strokeColor }) {
 export default function HistoricoScreen({ navigation }) {
   const { t } = useTranslation();
   const { dark, colors } = useTheme();
+
   const [filter, setFilter] = useState('hoje');
-  const data = MOCK_DATA[filter];
+  const [allData, setAllData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  // 2. Lógica para identificar se é um horário fixo ou uma chave de tradução
-  const renderHora = (val) => {
-    const isTimeFormat = /^([01]\d|2[0-3]):([0-5]\d)$/.test(val);
-    return isTimeFormat ? val : t(val);
-  };
+  const fetchHistory = useCallback(async (showRefresh = false) => {
+    if (showRefresh) setRefreshing(true);
+    else setLoading(true);
 
-  const media = Math.round(data.reduce((a, b) => a + b.bpm, 0) / data.length);
-  const max = Math.max(...data.map(d => d.bpm));
-  const min = Math.min(...data.map(d => d.bpm));
+    try {
+      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=500`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const json = await response.json();
+
+      const formatted = (json.dados || []).map((d, i) => ({
+        id: i,
+        bpm: d.bpm,
+        timestamp: d.timestamp,
+        hora: formatTimestamp(d.timestamp),
+        status: getStatusFromBpm(d.bpm),
+      }));
+
+      setAllData(formatted);
+      setError(null);
+    } catch (err) {
+      console.error('Erro ao buscar histórico:', err);
+      setError('Sem conexão com o servidor');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const data = filterByPeriod(allData, filter);
+
+  const media = data.length > 0 ? Math.round(data.reduce((a, b) => a + b.bpm, 0) / data.length) : 0;
+  const max = data.length > 0 ? Math.max(...data.map(d => d.bpm)) : 0;
+  const min = data.length > 0 ? Math.min(...data.map(d => d.bpm)) : 0;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('historico').toUpperCase()}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Feather name="settings" size={22} color={colors.textSecondary} />
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('historicoBatimentos')}</Text>
+        <TouchableOpacity onPress={() => fetchHistory(true)}>
+          <Feather name="refresh-cw" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -114,91 +145,126 @@ export default function HistoricoScreen({ navigation }) {
           <TouchableOpacity
             key={f.key}
             style={[
-                styles.filterBtn, 
-                { backgroundColor: colors.card, borderColor: colors.border },
-                filter === f.key && { backgroundColor: colors.primary + '22', borderColor: colors.primary }
+              styles.filterBtn,
+              { backgroundColor: colors.card, borderColor: colors.border },
+              filter === f.key && { backgroundColor: colors.primary + '22', borderColor: colors.primary }
             ]}
             onPress={() => setFilter(f.key)}
           >
             <Text style={[
-                styles.filterText, 
-                { color: colors.textSecondary },
-                filter === f.key && { color: colors.primary, fontWeight: 'bold' }
+              styles.filterText,
+              { color: colors.textSecondary },
+              filter === f.key && { color: colors.primary, fontWeight: 'bold' }
             ]}>
-              {t(f.key)}
+              {t(f.label)}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('media').toUpperCase()}</Text>
-            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{media}</Text>
-            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
-          </View>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('maximo').toUpperCase()}</Text>
-            <Text style={[
-                styles.summaryValue, 
-                { color: max > 140 ? '#E57373' : max > 120 ? '#FFB74D' : colors.textPrimary }
-            ]}>{max}</Text>
-            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
-          </View>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('minimo').toUpperCase()}</Text>
-            <Text style={[
-                styles.summaryValue, 
-                { color: min < 60 ? '#E57373' : colors.textPrimary }
-            ]}>{min}</Text>
-            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
-          </View>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Carregando histórico...</Text>
         </View>
-
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('graficoPeriodo').toUpperCase()}</Text>
-          <View style={styles.graphContainer}>
-            <LineGraph data={data} strokeColor={colors.primary} />
-            <View style={styles.graphLabels}>
-              {/* TRADUÇÃO DAS LABELS DO GRÁFICO */}
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{renderHora(data[0].hora)}</Text>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{renderHora(data[data.length - 1].hora)}</Text>
+      ) : error ? (
+        <View style={styles.loadingContainer}>
+          <Feather name="wifi-off" size={32} color={colors.error} />
+          <Text style={[styles.loadingText, { color: colors.error }]}>{error}</Text>
+          <TouchableOpacity
+            style={[styles.retryBtn, { borderColor: colors.primary }]}
+            onPress={() => fetchHistory()}
+          >
+            <Text style={[styles.retryText, { color: colors.primary }]}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchHistory(true)}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          {/* Cards de resumo */}
+          <View style={styles.summaryRow}>
+            <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('media').toUpperCase()}</Text>
+              <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{media}</Text>
+              <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
+            </View>
+            <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('maximo').toUpperCase()}</Text>
+              <Text style={[styles.summaryValue, { color: max > 140 ? '#E57373' : max > 120 ? '#FFB74D' : colors.textPrimary }]}>{max}</Text>
+              <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
+            </View>
+            <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('minimo').toUpperCase()}</Text>
+              <Text style={[styles.summaryValue, { color: min < 60 ? '#E57373' : colors.textPrimary }]}>{min}</Text>
+              <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
             </View>
           </View>
-        </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('leiturasRecentes').toUpperCase()}</Text>
-          <View style={{ marginTop: 12 }}>
-            {data.map((item, index) => {
-              const s = statusConfig(item.status, colors.success, t);
-              return (
-                <View key={item.id} style={[
-                    styles.readingItem, 
-                    index < data.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
-                ]}>
-                  <View style={[styles.statusDot, { backgroundColor: s.color + '22', borderColor: s.color }]}>
-                    <Feather name={s.icon} size={14} color={s.color} />
+          {/* Gráfico */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('graficoPeriodo').toUpperCase()}</Text>
+            <View style={styles.graphContainer}>
+              {data.length >= 2 ? (
+                <>
+                  <LineGraph data={[...data].reverse()} strokeColor={colors.primary} />
+                  <View style={styles.graphLabels}>
+                    <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{data[data.length - 1]?.hora}</Text>
+                    <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{data[0]?.hora}</Text>
                   </View>
-                  <View style={styles.readingInfo}>
-                    <Text style={[styles.readingBpm, { color: colors.textPrimary }]}>
-                        {item.bpm} <Text style={[styles.readingUnit, { color: colors.textSecondary }]}>BPM</Text>
-                    </Text>
-                    {/* TRADUÇÃO DA DATA/HORA NA LISTA */}
-                    <Text style={[styles.readingHora, { color: colors.textSecondary }]}>{renderHora(item.hora)}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: s.color + '22' }]}>
-                    <Text style={[styles.statusBadgeText, { color: s.color }]}>{s.label}</Text>
-                  </View>
-                </View>
-              );
-            })}
+                </>
+              ) : (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sem dados no período</Text>
+              )}
+            </View>
           </View>
-        </View>
 
-      </ScrollView>
+          {/* Lista de leituras */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('leiturasRecentes').toUpperCase()}</Text>
+            <View style={{ marginTop: 12 }}>
+              {data.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhuma leitura no período</Text>
+              ) : (
+                data.slice(0, 20).map((item, index) => {
+                  const s = statusConfig(item.status, colors.success, t);
+                  return (
+                    <View
+                      key={item.id}
+                      style={[
+                        styles.readingItem,
+                        index < Math.min(data.length, 20) - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                      ]}
+                    >
+                      <View style={[styles.statusDot, { backgroundColor: s.color + '22', borderColor: s.color }]}>
+                        <Feather name={s.icon} size={14} color={s.color} />
+                      </View>
+                      <View style={styles.readingInfo}>
+                        <Text style={[styles.readingBpm, { color: colors.textPrimary }]}>
+                          {item.bpm} <Text style={[styles.readingUnit, { color: colors.textSecondary }]}>BPM</Text>
+                        </Text>
+                        <Text style={[styles.readingHora, { color: colors.textSecondary }]}>{item.hora}</Text>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: s.color + '22' }]}>
+                        <Text style={[styles.statusBadgeText, { color: s.color }]}>{s.label}</Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          </View>
+
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -232,4 +298,9 @@ const styles = StyleSheet.create({
   readingHora: { fontSize: 12, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusBadgeText: { fontSize: 12, fontWeight: 'bold' },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { fontSize: 14 },
+  retryBtn: { marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
+  retryText: { fontSize: 14, fontWeight: '600' },
+  emptyText: { fontSize: 13, textAlign: 'center', paddingVertical: 20 },
 });
