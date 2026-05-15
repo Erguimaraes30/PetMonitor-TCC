@@ -19,6 +19,7 @@ const resources = {
       atividadeInferida: 'ATIVIDADE',
       resumoDetalhado: 'Resumo Detalhado',
       resumoBody: 'Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.',
+      resumoAtual: 'Resumo Atual',
       // Status
       normal: 'NORMAL',
       atencao: 'ATENÇÃO',
@@ -181,6 +182,7 @@ const resources = {
       atividadeInferida: 'ACTIVITY',
       resumoDetalhado: 'Detailed Summary',
       resumoBody: "Based on your pet's heart rate, here is a detailed summary of how your little animal's month went.",
+      resumoAtual: 'Current Summary',
       // Status
       normal: 'NORMAL',
       atencao: 'WARNING',

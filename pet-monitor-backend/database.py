@@ -171,3 +171,26 @@ def update_alert_limits(pet_id: str, bpm_min: int, bpm_max: int) -> bool:
     except Exception as e:
         print(f"❌ Erro ao atualizar limites: {e}")
         return False
+def get_alerts(pet_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Retorna a lista de alertas registrados para um pet.
+    """
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        # Usamos o row_factory para retornar dicionários em vez de tuplas
+        conn.row_factory = sqlite3.Row 
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, tipo_alerta, bpm_registrado as bpm, mensagem, timestamp, resolvido 
+            FROM alertas
+            WHERE pet_id = ?
+            ORDER BY timestamp DESC LIMIT ?
+        """, (pet_id, limit))
+        rows = cursor.fetchall()
+        conn.close()
+        
+        # Converte cada linha em um dicionário real
+        return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"❌ Erro ao buscar alertas no banco: {e}")
+        return []

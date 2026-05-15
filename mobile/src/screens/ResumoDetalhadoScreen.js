@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 64;
 const GRAPH_HEIGHT = 60;
-const API_URL = 'http://192.168.15.126:8000';
+const API_URL = 'https://petmonitor-tcc.onrender.com';
 const PET_ID = 'pet_001';
 
 function MiniGraph({ data, strokeColor }) {
@@ -149,7 +149,7 @@ export default function ResumoDetalhadoScreen({ navigation }) {
           {/* Resumo IA */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('resumoMensal').toUpperCase()}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('resumoAtual').toUpperCase()}</Text>
               <Feather name="cpu" size={16} color={colors.primary} />
             </View>
             <Text style={[styles.estabilidade, { color: colors.textPrimary }]}>

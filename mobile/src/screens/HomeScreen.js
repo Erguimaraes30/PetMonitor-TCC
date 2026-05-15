@@ -14,15 +14,15 @@ const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 80;
 const MAX_POINTS = 30;
-const API_URL = 'http://192.168.15.126:8000';
+const API_URL = 'https://petmonitor-tcc.onrender.com';
 const PET_ID = 'pet_001';
-const POLL_INTERVAL = 5000;
+const POLL_INTERVAL = 6000; // 6 segundos para reduzir carga e evitar bloqueios
 
 function getStatus(bpm, min, max) {
+  if (bpm <= 0) return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
   if (bpm < min) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
   if (bpm > max) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
   const thresholdAtencao = max * 0.85;
-  // Corrigido para chave simples sem caracteres especiais
   if (bpm > thresholdAtencao) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENCAO' };
   return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
 }
@@ -55,50 +55,36 @@ export default function HomeScreen({ navigation }) {
   const [harnessStatus, setHarnessStatus] = useState('offline');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
   const mediaRef = useRef(0);
   const lastTimestampRef = useRef(null);
 
   const fetchLatestBpm = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=30`);
+      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=30&_=${Date.now()}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
-      if (!data.dados || data.dados.length === 0) return;
+      const lista = data.dados || [];
+      if (lista.length > 0) {
+        const latest = lista[0];
+        if (latest.timestamp !== lastTimestampRef.current) {
+          lastTimestampRef.current = latest.timestamp;
+          const bpmValues = lista.slice(0, MAX_POINTS).map(d => d.bpm).reverse();
+          while (bpmValues.length < MAX_POINTS) bpmValues.unshift(bpmValues[0] || 0);
 
-      const latest = data.dados[0];
-      const latestBpm = latest.bpm;
-      const latestTimestamp = latest.timestamp;
-
-      if (latestTimestamp !== lastTimestampRef.current) {
-        lastTimestampRef.current = latestTimestamp;
-
-        const bpmValues = data.dados
-          .slice(0, MAX_POINTS)
-          .map(d => d.bpm)
-          .reverse();
-
-        while (bpmValues.length < MAX_POINTS) bpmValues.unshift(bpmValues[0] || 0);
-
-        setBpm(latestBpm);
-        setHistory(bpmValues);
-        setHarnessStatus(latest.status_coleira || 'online');
-
-        const date = new Date(latestTimestamp);
-        const agora = new Date();
-        const diffSec = Math.floor((agora - date) / 1000);
-
-        if (diffSec < 60) setLastUpdate('agora');
-        else if (diffSec < 3600) setLastUpdate(`${Math.floor(diffSec / 60)} min atrás`);
-        else setLastUpdate(date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-
-        mediaRef.current = Math.round(bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length);
-        setError(null);
+          setBpm(latest.bpm);
+          setHistory([...bpmValues]);
+          setHarnessStatus(latest.status_coleira || 'online');
+          const date = new Date(latest.timestamp);
+          setLastUpdate(date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+          mediaRef.current = Math.round(bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length);
+          setError(null);
+        }
       }
       setLoading(false);
     } catch (err) {
-      console.error('Erro ao buscar BPM:', err);
-      setError('Sem conexão com o servidor');
+      setError('Sem conexão');
       setHarnessStatus('offline');
       setLoading(false);
     }
@@ -112,25 +98,14 @@ export default function HomeScreen({ navigation }) {
 
   const status = getStatus(bpm, alertSettings.bpmMin, alertSettings.bpmMax);
   const diff = bpm - mediaRef.current;
-  const diffText = diff > 0
-    ? `+${diff} ${t('acimaDaMedia')}`
-    : diff < 0
-    ? `${diff} ${t('abaixoDaMedia')}`
-    : t('naMédia');
-
-  const globalColor = status.global === t('normal')
-    ? colors.success
-    : status.global === t('atencao')
-    ? '#FFB74D'
-    : colors.error;
-
-  const isOnline = harnessStatus === 'online';
+  const diffText = diff > 0 ? `+${diff} BPM ACIMA DA MÉDIA` : `${diff} BPM ABAIXO DA MÉDIA`;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
 
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
+      {/* HEADER */}
+      <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={[styles.avatar, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="github" size={20} color={colors.primary} />
@@ -139,10 +114,8 @@ export default function HomeScreen({ navigation }) {
         </View>
         <View style={styles.headerRight}>
           <View style={[styles.harnessbadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={[styles.harnessOnlineDot, { backgroundColor: isOnline ? colors.success : colors.error }]} />
-            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>
-              Harness: {isOnline ? 'Online' : 'Offline'}
-            </Text>
+            <View style={[styles.harnessOnlineDot, { backgroundColor: harnessStatus === 'online' ? colors.success : colors.error }]} />
+            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>Harness: {harnessStatus === 'online' ? 'Online' : 'Offline'}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
             <Feather name="settings" size={22} color={colors.textSecondary} />
@@ -151,73 +124,65 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {error && (
-          <View style={[styles.errorBanner, { backgroundColor: colors.error + '22', borderColor: colors.error }]}>
-            <Feather name="wifi-off" size={14} color={colors.error} style={{ marginRight: 8 }} />
-            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-          </View>
-        )}
-
+        
+        {/* STATUS GLOBAL */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statusRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusGlobal')}</Text>
-              <Text style={[styles.statusValue, { color: loading ? colors.textSecondary : globalColor }]}>
-                {/* Removido o .toLowerCase() para bater com a tradução exata */}
-                {loading ? '...' : t(status.global)}
-              </Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS GLOBAL</Text>
+              <Text style={[styles.statusValue, { color: status.color }]}>{loading ? '...' : status.label}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('sincronizado')}</Text>
-              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{t('ultimaAtualizacao')}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINCRONIZADO</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>Última atualização:</Text>
               <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{lastUpdate}</Text>
             </View>
           </View>
         </View>
 
+        {/* FREQUENCIA CARDIACA */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.bpmRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('frequenciaCardiaca')}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>FREQUÊNCIA CARDÍACA</Text>
               <View style={styles.bpmValueRow}>
-                <Text style={[styles.bpmNumber, { color: colors.textPrimary }]}>
-                  {loading ? '--' : bpm}
-                </Text>
+                <Text style={[styles.bpmNumber, { color: colors.textPrimary }]}>{loading ? '--' : bpm}</Text>
                 <Text style={[styles.bpmUnit, { color: colors.textSecondary }]}> BPM</Text>
               </View>
             </View>
-            <Text style={[styles.diffText, { color: Math.abs(diff) > 15 ? '#FFB74D' : colors.textSecondary }]}>
-              {loading ? '' : diffText}
-            </Text>
+            <Text style={[styles.diffText, { color: colors.textSecondary }]}>{loading ? '' : diffText}</Text>
           </View>
 
           <View style={styles.graphContainer}>
             <MiniGraph data={history} strokeColor={colors.primary} />
             <View style={styles.graphLabels}>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>-60 MIN</Text>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{t('agora').toUpperCase()}</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>-30 MIN</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>AGORA</Text>
             </View>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[styles.historyButton, { backgroundColor: colors.card, borderColor: colors.primary + '44' }]}
+        {/* BOTAO HISTORICO */}
+        <TouchableOpacity 
+          style={[styles.historyButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => navigation.navigate('Historico')}
         >
           <Feather name="clock" size={18} color={colors.primary} style={{ marginRight: 10 }} />
-          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>{t('verHistorico')}</Text>
+          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>Ver Histórico Detalhado</Text>
           <Feather name="chevron-right" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
+        {/* IA ENGINE - REINTEGRADO AQUI */}
         <View style={[styles.iaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.iaBadge, { backgroundColor: colors.primary + '11' }]}>
-            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>{t('iaEngine')}</Text>
+          <View style={[styles.iaBadge, { backgroundColor: colors.primary + '22' }]}>
+            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>IA ENGINE</Text>
           </View>
           <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('ResumoDetalhado')}>
-            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>{t('atividadeInferida')}</Text>
-            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>{t('resumoDetalhado')}</Text>
-            <Text style={[styles.iaBody, { color: colors.textSecondary }]}>{t('resumoBody')}</Text>
+            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>ATIVIDADE</Text>
+            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>Resumo Detalhado</Text>
+            <Text style={[styles.iaBody, { color: colors.textSecondary }]}>
+              Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -228,10 +193,7 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: SIZES.padding, paddingTop: 55, paddingBottom: 16,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 55, paddingBottom: 16 },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 10, borderWidth: 1 },
   petName: { fontSize: 24, fontWeight: 'bold' },
@@ -239,28 +201,26 @@ const styles = StyleSheet.create({
   harnessbadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
   harnessOnlineDot: { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
   harnessText: { fontSize: 12 },
-  scroll: { padding: SIZES.padding, gap: 12, paddingBottom: 30 },
-  card: { borderRadius: SIZES.radius, padding: 16, borderWidth: 1 },
+  scroll: { padding: 20, gap: 12, paddingBottom: 30 },
+  card: { borderRadius: 16, padding: 16, borderWidth: 1 },
   cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between' },
   statusValue: { fontSize: 22, fontWeight: 'bold', marginTop: 4 },
   cardSubValue: { fontSize: 12, textAlign: 'right' },
   bpmRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   bpmValueRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 },
-  bpmNumber: { fontSize: 52, fontWeight: 'bold', lineHeight: 56 },
+  bpmNumber: { fontSize: 52, fontWeight: 'bold' },
   bpmUnit: { fontSize: 16, marginBottom: 6 },
-  diffText: { fontSize: 11, fontWeight: 'bold', textAlign: 'right', maxWidth: 130, lineHeight: 16, marginTop: 30 },
+  diffText: { fontSize: 11, fontWeight: 'bold', textAlign: 'right', maxWidth: 130 },
   graphContainer: { marginTop: 4 },
   graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   graphLabel: { fontSize: 10 },
-  historyButton: { flexDirection: 'row', alignItems: 'center', borderRadius: SIZES.radius, padding: 16, borderWidth: 1 },
+  historyButton: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 16, borderWidth: 1 },
   historyButtonText: { fontSize: 15, fontWeight: '500' },
-  iaCard: { borderRadius: SIZES.radius, padding: 16, borderWidth: 1, minHeight: 160 },
+  iaCard: { borderRadius: 16, padding: 16, borderWidth: 1, marginTop: 4 },
   iaBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', marginBottom: 6 },
   iaBadgeText: { fontSize: 10, fontWeight: 'bold' },
-  iaTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  iaSubtitle: { fontSize: 13, marginBottom: 8 },
-  iaBody: { fontSize: 13, lineHeight: 20 },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: SIZES.radius, borderWidth: 1, marginBottom: 4 },
-  errorText: { fontSize: 13, fontWeight: '500' },
+  iaTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  iaSubtitle: { fontSize: 14, marginBottom: 10 },
+  iaBody: { fontSize: 14, lineHeight: 22 }
 });

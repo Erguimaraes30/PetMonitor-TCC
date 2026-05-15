@@ -1,118 +1,77 @@
-"""
-Serviço de IA para análise de padrões de BPM.
-Responsável por gerar insights sobre o estado do pet usando LLM.
-"""
 import os
 import requests
 from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 
 LLM_API_KEY = os.getenv("LLM_API_KEY")
-LLM_MODEL = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
-
+LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini") # Recomendado gpt-4o-mini pelo custo/benefício
 
 def analyze_bpm_history(bpm_data: List[Dict]) -> Optional[str]:
-    """
-    Analisa um histórico de BPMs e gera um insight sobre o estado do pet.
-    
-    Args:
-        bpm_data: Lista de dicts com 'bpm' e 'timestamp'
-    
-    Returns:
-        Texto de análise IA ou None se erro
-    """
-    if not bpm_data:
-        return "Sem dados suficientes para análise."
-    
-    if not LLM_API_KEY:
-        return generate_local_analysis(bpm_data)
-    
-    try:
-        # Prepara dados para o LLM
-        avg_bpm = sum([d['bpm'] for d in bpm_data]) / len(bpm_data)
-        max_bpm = max([d['bpm'] for d in bpm_data])
-        min_bpm = min([d['bpm'] for d in bpm_data])
-        
-        prompt = f"""
-Você é um assistente veterinário especializado em monitoramento de pets.
-Com base nos seguintes dados de frequência cardíaca:
-- BPM Médio: {avg_bpm:.0f}
-- BPM Máximo: {max_bpm}
-- BPM Mínimo: {min_bpm}
-- Número de leituras: {len(bpm_data)}
+    if not bpm_data or len(bpm_data) < 5:
+        return "Dados insuficientes para uma análise comportamental precisa."
 
-Descreva brevemente (2-3 linhas) o estado provável do pet: repouso, atividade normal, brincadeira ou possível estresse.
-"""
-        
+    # --- ENGENHARIA DE FEATURES (O "CÉREBRO" DA LÓGICA LOCAL) ---
+    bpms = [d['bpm'] for d in bpm_data]
+    avg_bpm = sum(bpms) / len(bpms)
+    max_bpm = max(bpms)
+    min_bpm = min(bpms)
+    
+    # Variabilidade (Amplitude): Detecta se o pet está instável ou constante
+    amplitude = max_bpm - min_bpm
+    
+    # Tendência (Últimos 5 min vs Resto): O BPM está subindo ou descendo?
+    recent_avg = sum(bpms[:5]) / 5
+    trend = "subindo" if recent_avg > avg_bpm + 5 else "descendo" if recent_avg < avg_bpm - 5 else "estável"
+
+    if not LLM_API_KEY:
+        return generate_local_analysis(avg_bpm, max_bpm, amplitude, trend)
+
+    try:
+        # PROMPT AVANÇADO: Dá contexto veterinário e persona para a IA
+        prompt = f"""
+        Você é um especialista em comportamento animal e fisiologia veterinária.
+        Analise os sinais vitais do pet e forneça um insight humanizado:
+
+        DADOS DO PERÍODO:
+        - Frequência Média: {avg_bpm:.0f} BPM
+        - Pico Máximo: {max_bpm} BPM (Mínimo: {min_bpm})
+        - Variabilidade: {amplitude} BPM (Oscilação entre picos)
+        - Tendência Recente: O batimento está {trend}.
+        - Amostragem: {len(bpm_data)} leituras.
+
+        INSTRUÇÕES:
+        1. Identifique se o comportamento parece ser sono profundo, alerta, exercício ou estresse agudo.
+        2. Se houver alta variabilidade ({amplitude} > 40), mencione que o pet pode estar em fase REM ou alternando entre agitação e pausa.
+        3. Se o BPM estiver muito alto e constante, sugira hidratação ou descanso.
+        4. Responda em no máximo 3 linhas com um tom empático e técnico.
+        """
+
         headers = {"Authorization": f"Bearer {LLM_API_KEY}"}
         payload = {
             "model": LLM_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 100
+            "messages": [
+                {"role": "system", "content": "Você é um monitor de saúde pet inteligente."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7 # Adiciona um pouco de "personalidade" ao texto
         }
-        
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=10
-        )
+
+        response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=12)
         
         if response.status_code == 200:
-            result = response.json()
-            return result['choices'][0]['message']['content'].strip()
-        else:
-            print(f"⚠️  Erro LLM: {response.status_code}")
-            return generate_local_analysis(bpm_data)
-    
+            return response.json()['choices'][0]['message']['content'].strip()
+        return generate_local_analysis(avg_bpm, max_bpm, amplitude, trend)
+
     except Exception as e:
-        print(f"❌ Erro na análise IA: {e}")
-        return generate_local_analysis(bpm_data)
+        print(f"❌ Erro IA: {e}")
+        return generate_local_analysis(avg_bpm, max_bpm, amplitude, trend)
 
-
-def generate_local_analysis(bpm_data: List[Dict]) -> str:
-    """
-    Gera análise local sem dependência de LLM.
-    Útil como fallback quando API não está disponível.
-    """
-    if not bpm_data:
-        return "Sem dados para análise."
-    
-    bpms = [d['bpm'] for d in bpm_data]
-    avg_bpm = sum(bpms) / len(bpms)
-    
-    if avg_bpm < 70:
-        return "🛌 Pet em repouso. Frequência cardíaca baixa indicando descanso ou sono."
-    elif avg_bpm < 100:
-        return "😊 Pet calmo. Atividade normal com frequência cardíaca estável."
-    elif avg_bpm < 130:
-        return "🎾 Pet ativo. Pode estar brincando ou em atividade leve."
-    else:
-        return "⚡ Pet muito ativo ou possível estresse. Monitore os próximos valores."
-
-
-def generate_daily_report(pet_id: str, bpm_history: List[Dict]) -> Dict:
-    """
-    Gera um relatório diário do pet com análise de tendências.
-    """
-    if not bpm_history:
-        return {
-            "pet_id": pet_id,
-            "data": datetime.now().isoformat(),
-            "resumo": "Sem dados no período",
-            "bpm_medio": 0,
-            "bpm_max": 0,
-            "bpm_min": 0
-        }
-    
-    bpms = [d['bpm'] for d in bpm_history]
-    
-    return {
-        "pet_id": pet_id,
-        "data": datetime.now().isoformat(),
-        "resumo": analyze_bpm_history(bpm_history),
-        "bpm_medio": round(sum(bpms) / len(bpms), 2),
-        "bpm_max": max(bpms),
-        "bpm_min": min(bpms),
-        "total_leituras": len(bpms)
-    }
+def generate_local_analysis(avg, max_val, amp, trend) -> str:
+    """Fallback inteligente: Lógica baseada em comportamento, não só números."""
+    if max_val > 150:
+        return f"⚡ Alerta de alta intensidade. O pet atingiu {max_val} BPM. Se ele não estiver brincando, pode estar estressado ou com calor."
+    if amp > 50:
+        return "🎢 Alta oscilação detectada. O pet parece estar alternando momentos de euforia com pausas curtas de descanso."
+    if avg < 75 and trend == "estável":
+        return "🛌 Repouso profundo detectado. O ritmo cardíaco está calmo e constante, ideal para um sono recuperador."
+    return "✅ Ritmo estável. O pet apresenta uma frequência cardíaca compatível com atividades domésticas normais."

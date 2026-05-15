@@ -1,7 +1,12 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const DataContext = createContext();
+
+// PRODUÇÃO: https://petmonitor-tcc.onrender.com
+// LOCAL (teste): http://localhost:8000
+const API_URL = 'https://petmonitor-tcc.onrender.com';
+const PET_ID = 'pet_001';
 
 export const DataProvider = ({ children }) => {
   const [tutorData, setTutorData] = useState({ nome: '', whatsapp: '', email: '', senha: '' });
@@ -9,7 +14,11 @@ export const DataProvider = ({ children }) => {
   const [vetData, setVetData] = useState({ nome: '', email: '' });
   const [alertSettings, setAlertSettings] = useState({ bpmMin: 60, bpmMax: 140 });
 
-  // 1. Carregar dados ao iniciar o App
+  // --- NOVOS ESTADOS PARA A API ---
+  const [alerts, setAlerts] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  // 1. Carregar dados locais (AsyncStorage)
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -31,7 +40,41 @@ export const DataProvider = ({ children }) => {
     loadData();
   }, []);
 
-  // 2. Funções de atualização com persistência automática
+  // --- 2. FUNÇÃO PARA BUSCAR ALERTAS DA API ---
+  const fetchAlerts = useCallback(async () => {
+    // Só mostra o loading na primeira vez para não irritar o usuário
+    if (alerts.length === 0) setLoadingAlerts(true); 
+    
+    try {
+      const response = await fetch(`${API_URL}/monitor/alerts/${PET_ID}?_=${Date.now()}`);
+      const data = await response.json();
+      
+      if (data.alertas) {
+        // Ordenar: mais recentes primeiro
+        const sorted = data.alertas.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setAlerts(sorted);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar alertas da API:", err);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, [alerts.length]);
+
+  // --- 3. FUNÇÃO PARA MARCAR COMO LIDO ---
+  const markAllAsRead = async () => {
+    try {
+      // Otimismo: atualiza na tela antes mesmo da API responder
+      const updatedAlerts = alerts.map(a => ({ ...a, lido: true }));
+      setAlerts(updatedAlerts);
+
+      await fetch(`${API_URL}/monitor/alerts/read-all/${PET_ID}`, { method: 'POST' });
+    } catch (err) {
+      console.error("Erro ao marcar como lidos:", err);
+    }
+  };
+
+  // Funções de atualização local
   const updateTutorData = async (newData) => {
     const updated = { ...tutorData, ...newData };
     setTutorData(updated);
@@ -62,6 +105,11 @@ export const DataProvider = ({ children }) => {
       petData, updatePetData,
       vetData, updateVetData,
       alertSettings, updateAlertSettings,
+      // Exportando os novos dados para as telas:
+      alerts, 
+      loadingAlerts, 
+      fetchAlerts, 
+      markAllAsRead
     }}>
       {children}
     </DataContext.Provider>
