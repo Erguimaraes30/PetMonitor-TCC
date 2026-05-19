@@ -66,7 +66,7 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Notificações */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('notificacoes')}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('notificacoes').toUpperCase()}</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.notifRow}>
               <View style={[styles.notifIcon, { backgroundColor: colors.error + '22' }]}>

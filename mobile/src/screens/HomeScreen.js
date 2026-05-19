@@ -16,7 +16,7 @@ const GRAPH_HEIGHT = 80;
 const MAX_POINTS = 30;
 const API_URL = 'https://petmonitor-tcc.onrender.com';
 const PET_ID = 'pet_001';
-const POLL_INTERVAL = 6000; // 6 segundos para reduzir carga e evitar bloqueios
+const POLL_INTERVAL = 10000; // 10 segundos
 
 function getStatus(bpm, min, max) {
   if (bpm <= 0) return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };

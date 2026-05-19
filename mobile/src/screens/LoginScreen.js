@@ -71,7 +71,7 @@ const LoginScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('senha')}</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('senha').toUpperCase()}</Text>
             <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.textPrimary }]}

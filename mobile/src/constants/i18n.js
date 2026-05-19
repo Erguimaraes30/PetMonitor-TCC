@@ -91,6 +91,7 @@ const resources = {
       resumoMensalBody: 'Seu pet apresentou estabilidade alta durante o período. A movimentação mínima detectada e a orientação predominante horizontal sugerem um estado de repouso estável.',
       pico: 'PICO',
       // Settings
+      notificacoes: 'Notificações',
       configuracoes: 'Configurações',
       conta: 'CONTA',
       perfilTutor: 'Perfil do Tutor',
@@ -163,6 +164,7 @@ const resources = {
     subtituloRegistroVet: 'Insira as informações profissionais para concluir a configuração.',
     emailVeterinario: 'E-mail do veterinário',
     finalizarCadastro: 'Finalizar Cadastro',
+    nomeCompleto: 'NOME COMPLETO',
     }
   },
   en: {
@@ -218,7 +220,7 @@ const resources = {
       // Perfil
     pet: 'Pet',
     dadosTutor: 'Owner Data',
-    nomeCompleto: 'Full Name',
+    nomeCompleto: 'FULL NAME',
     contato: 'Contact',
     email: 'E-mail',
     naoPreenchido: 'Not filled',
@@ -255,6 +257,7 @@ const resources = {
       resumoMensalBody: 'Your pet showed high stability during the period. The minimal movement detected and the predominantly horizontal orientation suggest a stable resting state.',
       pico: 'PEAK',
       // Settings
+      notificacoes: 'Notifications',
       configuracoes: 'Settings',
       conta: 'ACCOUNT',
       perfilTutor: 'Owner Profile',
@@ -327,6 +330,7 @@ const resources = {
     subtituloRegistroVet: 'Enter professional information to complete the setup.',
     emailVeterinario: 'Veterinarian Email',
     finalizarCadastro: 'Finalize Registration',
+    nomeCompleto: 'FULL NAME',
     }
   }
 };
