@@ -72,6 +72,14 @@ def init_db():
             atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alert_state (
+            pet_id TEXT PRIMARY KEY,
+            active_type TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
     conn.commit()
     conn.close()
@@ -265,3 +273,41 @@ def get_email_settings(pet_id: str) -> Dict[str, Any]:
     except Exception as e:
         print(f"❌ Erro ao buscar configuração de e-mail: {e}")
         return {"enabled": False, "tutor_email": "", "vet_email": "", "tutor_nome": "", "vet_nome": "", "pet_nome": ""}
+
+
+def get_alert_state(pet_id: str) -> Dict[str, Any]:
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT active_type
+            FROM alert_state
+            WHERE pet_id = ?
+        """, (pet_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return {"active_type": None}
+
+        return {"active_type": row["active_type"]}
+    except Exception as e:
+        print(f"❌ Erro ao buscar estado de alerta: {e}")
+        return {"active_type": None}
+
+
+def set_alert_state(pet_id: str, active_type: str = None) -> bool:
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO alert_state (pet_id, active_type, updated_at)
+            VALUES (?, ?, ?)
+        """, (pet_id, active_type, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao atualizar estado de alerta: {e}")
+        return False

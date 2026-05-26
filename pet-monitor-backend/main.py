@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 from database import (
     init_db, save_bpm, get_pet_history, save_alert,
     get_alert_limits, update_alert_limits, get_alerts,
-    update_email_settings, get_email_settings
+    update_email_settings, get_email_settings,
+    get_alert_state, set_alert_state
 )
 # Removido 'generate_daily_report' que causava o ImportError
 from services.ai_agent import analyze_bpm_history
@@ -43,18 +44,50 @@ class EmailAlertSettings(BaseModel):
 
 # ================== UTILITÁRIOS ==================
 
-def check_bpm_alert(pet_id: str, bpm: int) -> bool:
+def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = None) -> bool:
     limits = get_alert_limits(pet_id)
+    state = get_alert_state(pet_id)
+    active_type = state.get("active_type")
+
     if bpm > limits["bpm_max"]:
         message = f"BPM acima do limite: {bpm} > {limits['bpm_max']}"
         save_alert(pet_id, "BPM_ALTO", bpm, message)
-        send_alert_email(pet_id, "BPM_ALTO", bpm, message, get_email_settings(pet_id))
+        if active_type != "BPM_ALTO":
+            if background_tasks:
+                background_tasks.add_task(
+                    send_alert_email,
+                    pet_id,
+                    "BPM_ALTO",
+                    bpm,
+                    message,
+                    get_email_settings(pet_id),
+                )
+            else:
+                send_alert_email(pet_id, "BPM_ALTO", bpm, message, get_email_settings(pet_id))
+        set_alert_state(pet_id, "BPM_ALTO")
         return True
+
     if bpm < limits["bpm_min"]:
         message = f"BPM abaixo do limite: {bpm} < {limits['bpm_min']}"
         save_alert(pet_id, "BPM_BAIXO", bpm, message)
-        send_alert_email(pet_id, "BPM_BAIXO", bpm, message, get_email_settings(pet_id))
+        if active_type != "BPM_BAIXO":
+            if background_tasks:
+                background_tasks.add_task(
+                    send_alert_email,
+                    pet_id,
+                    "BPM_BAIXO",
+                    bpm,
+                    message,
+                    get_email_settings(pet_id),
+                )
+            else:
+                send_alert_email(pet_id, "BPM_BAIXO", bpm, message, get_email_settings(pet_id))
+        set_alert_state(pet_id, "BPM_BAIXO")
         return True
+
+    if active_type is not None:
+        set_alert_state(pet_id, None)
+
     return False
 
 # ================== ROTAS ==================
@@ -67,7 +100,7 @@ def startup_event():
 async def receive_seed_data(data: BPMReading, background_tasks: BackgroundTasks):
     p_id = data.pet_id if data.pet_id else "pet_001"
     background_tasks.add_task(save_bpm, p_id, data.bpm, data.status_coleira)
-    alerta_disparado = check_bpm_alert(p_id, data.bpm)
+    alerta_disparado = check_bpm_alert(p_id, data.bpm, background_tasks)
     return {"received": True, "alerta_disparado": alerta_disparado}
 
 @app.get("/monitor/alerts/{pet_id}")
