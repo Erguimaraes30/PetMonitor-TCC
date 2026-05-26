@@ -53,6 +53,7 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
         message = f"BPM acima do limite: {bpm} > {limits['bpm_max']}"
         save_alert(pet_id, "BPM_ALTO", bpm, message)
         if active_type != "BPM_ALTO":
+            email_settings = get_email_settings(pet_id)
             if background_tasks:
                 background_tasks.add_task(
                     send_alert_email,
@@ -60,10 +61,13 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
                     "BPM_ALTO",
                     bpm,
                     message,
-                    get_email_settings(pet_id),
+                    email_settings,
                 )
+                print(f"📨 E-mail de taquicardia enfileirado para {pet_id}")
             else:
-                send_alert_email(pet_id, "BPM_ALTO", bpm, message, get_email_settings(pet_id))
+                send_alert_email(pet_id, "BPM_ALTO", bpm, message, email_settings)
+        else:
+            print(f"ℹ️  Alerta BPM_ALTO já ativo para {pet_id}; sem novo e-mail")
         set_alert_state(pet_id, "BPM_ALTO")
         return True
 
@@ -71,6 +75,7 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
         message = f"BPM abaixo do limite: {bpm} < {limits['bpm_min']}"
         save_alert(pet_id, "BPM_BAIXO", bpm, message)
         if active_type != "BPM_BAIXO":
+            email_settings = get_email_settings(pet_id)
             if background_tasks:
                 background_tasks.add_task(
                     send_alert_email,
@@ -78,14 +83,18 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
                     "BPM_BAIXO",
                     bpm,
                     message,
-                    get_email_settings(pet_id),
+                    email_settings,
                 )
+                print(f"📨 E-mail de bradicardia enfileirado para {pet_id}")
             else:
-                send_alert_email(pet_id, "BPM_BAIXO", bpm, message, get_email_settings(pet_id))
+                send_alert_email(pet_id, "BPM_BAIXO", bpm, message, email_settings)
+        else:
+            print(f"ℹ️  Alerta BPM_BAIXO já ativo para {pet_id}; sem novo e-mail")
         set_alert_state(pet_id, "BPM_BAIXO")
         return True
 
     if active_type is not None:
+        print(f"✅ BPM normalizado para {pet_id}; estado de alerta limpo")
         set_alert_state(pet_id, None)
 
     return False
