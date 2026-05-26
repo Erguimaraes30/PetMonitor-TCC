@@ -4,6 +4,7 @@ import {
   TouchableOpacity, Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
 import { DataContext } from '../context/DataContext';
@@ -48,6 +49,7 @@ export default function HomeScreen({ navigation }) {
   const { t } = useTranslation();
   const { petData, alertSettings } = useContext(DataContext);
   const { dark, colors } = useTheme();
+  const isFocused = useIsFocused();
 
   const [bpm, setBpm] = useState(0);
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(0));
@@ -91,10 +93,12 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
+    if (!isFocused) return undefined;
+
     fetchLatestBpm();
     const interval = setInterval(fetchLatestBpm, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchLatestBpm]);
+  }, [fetchLatestBpm, isFocused]);
 
   const status = getStatus(bpm, alertSettings.bpmMin, alertSettings.bpmMax);
   const diff = bpm - mediaRef.current;

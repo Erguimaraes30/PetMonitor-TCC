@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { DataContext } from '../context/DataContext';
@@ -39,12 +40,15 @@ function tipoConfig(tipo, t) {
 export default function AlertasScreen({ navigation }) {
   const { t } = useTranslation();
   const { dark, colors } = useTheme();
+  const isFocused = useIsFocused();
   
   // fetchAlerts deve estar exposto no seu DataContext para podermos chamar aqui
   const { alerts = [], markAllAsRead, loadingAlerts, fetchAlerts } = useContext(DataContext);
 
   // EFEITO DE ATUALIZAÇÃO AUTOMÁTICA (Polling)
   useEffect(() => {
+    if (!isFocused) return undefined;
+
     // Busca imediata ao abrir a tela
     if (fetchAlerts) fetchAlerts();
 
@@ -54,7 +58,7 @@ export default function AlertasScreen({ navigation }) {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchAlerts]);
+  }, [fetchAlerts, isFocused]);
 
   const alertasHoje = useMemo(() => {
     return (alerts || []).filter(a => {

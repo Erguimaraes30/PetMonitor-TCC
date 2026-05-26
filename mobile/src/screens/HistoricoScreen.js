@@ -4,6 +4,7 @@ import {
   TouchableOpacity, Dimensions, ActivityIndicator
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { SIZES } from '../constants/theme';
 import Svg, { Polyline } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
@@ -47,6 +48,7 @@ function statusConfig(bpm, min, max, successColor, t) {
 export default function HistoricoScreen({ navigation }) {
   const { t } = useTranslation();
   const { dark, colors } = useTheme();
+  const isFocused = useIsFocused();
   const { alertSettings } = useContext(DataContext);
   
   const [filter, setFilter] = useState('hoje');
@@ -76,6 +78,8 @@ export default function HistoricoScreen({ navigation }) {
 
   // Lógica de Polling (Atualização automática)
   useEffect(() => {
+    if (!isFocused) return undefined;
+
     // Busca inicial imediata
     if (filter === 'hoje') {
       fetchHistory(true);
@@ -90,7 +94,7 @@ export default function HistoricoScreen({ navigation }) {
       setHistoryData([]);
       setLoading(false);
     }
-  }, [filter, fetchHistory]);
+  }, [filter, fetchHistory, isFocused]);
 
   const hasData = historyData.length > 0 && filter === 'hoje';
 
