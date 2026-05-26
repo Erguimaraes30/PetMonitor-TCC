@@ -59,6 +59,19 @@ def init_db():
             FOREIGN KEY (pet_id) REFERENCES pets(pet_id)
         )
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS email_settings (
+            pet_id TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            tutor_email TEXT,
+            vet_email TEXT,
+            tutor_nome TEXT,
+            vet_nome TEXT,
+            pet_nome TEXT,
+            atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
     conn.commit()
     conn.close()
@@ -194,3 +207,61 @@ def get_alerts(pet_id: str, limit: int = 20) -> List[Dict[str, Any]]:
     except Exception as e:
         print(f"❌ Erro ao buscar alertas no banco: {e}")
         return []
+
+
+def update_email_settings(
+    pet_id: str,
+    enabled: bool,
+    tutor_email: str = "",
+    vet_email: str = "",
+    tutor_nome: str = "",
+    vet_nome: str = "",
+    pet_nome: str = "",
+) -> bool:
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO email_settings
+            (pet_id, enabled, tutor_email, vet_email, tutor_nome, vet_nome, pet_nome, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            pet_id,
+            1 if enabled else 0,
+            tutor_email,
+            vet_email,
+            tutor_nome,
+            vet_nome,
+            pet_nome,
+            datetime.now().isoformat(),
+        ))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao atualizar configuração de e-mail: {e}")
+        return False
+
+
+def get_email_settings(pet_id: str) -> Dict[str, Any]:
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT enabled, tutor_email, vet_email, tutor_nome, vet_nome, pet_nome
+            FROM email_settings
+            WHERE pet_id = ?
+        """, (pet_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return {"enabled": False, "tutor_email": "", "vet_email": "", "tutor_nome": "", "vet_nome": "", "pet_nome": ""}
+
+        settings = dict(row)
+        settings["enabled"] = bool(settings.get("enabled"))
+        return settings
+    except Exception as e:
+        print(f"❌ Erro ao buscar configuração de e-mail: {e}")
+        return {"enabled": False, "tutor_email": "", "vet_email": "", "tutor_nome": "", "vet_nome": "", "pet_nome": ""}

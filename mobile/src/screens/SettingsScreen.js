@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
-  TouchableOpacity, Switch, Dimensions
+  TouchableOpacity, Switch, Dimensions, Alert
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SIZES } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { DataContext } from '../context/DataContext';
 
 const { width } = Dimensions.get('window');
 
@@ -22,12 +23,40 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function SettingsScreen({ navigation }) {
-  const [emailAlertas, setEmailAlertas] = useState(true);
-  const [pushAlertas, setPushAlertas] = useState(true);
+  const [syncingEmail, setSyncingEmail] = useState(false);
 
   const { dark, toggleTheme, colors } = useTheme();
   const { language, changeLanguage } = useLanguage();
   const { t } = useTranslation();
+  const {
+    tutorData,
+    vetData,
+    petData,
+    notificationSettings,
+    updateNotificationSettings,
+    syncEmailAlertSettings,
+  } = useContext(DataContext);
+
+  const handleEmailAlertToggle = async (enabled) => {
+    const previous = notificationSettings.emailAlerts;
+    await updateNotificationSettings({ emailAlerts: enabled });
+
+    if (enabled && !tutorData.email && !vetData.email) {
+      Alert.alert('E-mail não configurado', 'Cadastre o e-mail do tutor ou do veterinário no perfil antes de ativar os alertas por e-mail.');
+      await updateNotificationSettings({ emailAlerts: previous });
+      return;
+    }
+
+    setSyncingEmail(true);
+    try {
+      await syncEmailAlertSettings(enabled, { tutorData, vetData, petData });
+    } catch (err) {
+      await updateNotificationSettings({ emailAlerts: previous });
+      Alert.alert('Erro ao salvar', 'Não foi possível atualizar os alertas por e-mail agora.');
+    } finally {
+      setSyncingEmail(false);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -77,8 +106,9 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>{t('notifCriticas')}</Text>
               </View>
               <Switch
-                value={emailAlertas}
-                onValueChange={setEmailAlertas}
+                value={notificationSettings.emailAlerts}
+                onValueChange={handleEmailAlertToggle}
+                disabled={syncingEmail}
                 trackColor={{ false: colors.border, true: colors.error }}
                 thumbColor="#FFF"
               />
@@ -95,8 +125,8 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={[styles.notifSubtitle, { color: colors.textSecondary }]}>{t('alertasTempoReal')}</Text>
               </View>
               <Switch
-                value={pushAlertas}
-                onValueChange={setPushAlertas}
+                value={notificationSettings.pushAlerts}
+                onValueChange={(value) => updateNotificationSettings({ pushAlerts: value })}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFF"
               />
