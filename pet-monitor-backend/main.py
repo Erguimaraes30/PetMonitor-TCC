@@ -1,9 +1,10 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import uvicorn
+import requests
 from dotenv import load_dotenv
 
 # Importando todas as funções do seu database.py
@@ -18,6 +19,11 @@ from services.ai_agent import analyze_bpm_history
 from services.email_svc import send_alert_email
 
 load_dotenv()
+
+ADAFRUIT_USERNAME = os.getenv("ADAFRUIT_IO_USERNAME") or os.getenv("ADAFRUIT_USERNAME")
+ADAFRUIT_IO_KEY = os.getenv("ADAFRUIT_IO_KEY")
+ADAFRUIT_BASE_URL = "https://io.adafruit.com/api/v2"
+PETMONITOR_FEEDS = ("bpm", "ir", "status")
 
 app = FastAPI(title="Pet Monitoring Agent - ScanTap System")
 
@@ -43,6 +49,37 @@ class EmailAlertSettings(BaseModel):
     pet_nome: str = ""
 
 # ================== UTILITÁRIOS ==================
+
+def parse_int(value):
+    try:
+        if value is None or str(value).strip() == "":
+            return 0
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def parse_status(value):
+    if value is None or str(value).strip() == "":
+        return "sem dados"
+    return str(value).strip()
+
+
+def get_feed_last_value(feed_key):
+    url = f"{ADAFRUIT_BASE_URL}/{ADAFRUIT_USERNAME}/feeds/{feed_key}/data/last"
+    response = requests.get(
+        url,
+        headers={"X-AIO-Key": ADAFRUIT_IO_KEY},
+        timeout=10,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    return {
+        "value": data.get("value"),
+        "created_at": data.get("created_at"),
+    }
+
 
 def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = None) -> bool:
     limits = get_alert_limits(pet_id)
@@ -104,6 +141,57 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+@app.get("/")
+async def root():
+    return {
+        "service": "PetMonitor API",
+        "status": "online",
+    }
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/petmonitor/latest")
+async def petmonitor_latest():
+    if not ADAFRUIT_USERNAME or not ADAFRUIT_IO_KEY:
+        return {
+            "error": True,
+            "message": "Variaveis ADAFRUIT_IO_USERNAME e ADAFRUIT_IO_KEY precisam estar configuradas.",
+            "source": "adafruit_io",
+        }
+
+    feed_values = {}
+    errors = {}
+    updated_at_values = []
+
+    for feed_key in PETMONITOR_FEEDS:
+        try:
+            result = get_feed_last_value(feed_key)
+            feed_values[feed_key] = result.get("value")
+            if result.get("created_at"):
+                updated_at_values.append(result["created_at"])
+        except (requests.exceptions.RequestException, ValueError) as exc:
+            errors[feed_key] = f"Falha ao buscar feed '{feed_key}': {exc}"
+
+    response = {
+        "bpm": parse_int(feed_values.get("bpm")),
+        "ir": parse_int(feed_values.get("ir")),
+        "status": parse_status(feed_values.get("status")),
+        "updated_at": max(updated_at_values) if updated_at_values else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "source": "adafruit_io",
+    }
+
+    if errors:
+        response["error"] = True
+        response["message"] = "Um ou mais feeds nao puderam ser lidos."
+        response["errors"] = errors
+
+    return response
+
 
 @app.post("/monitor/seed", status_code=201)
 async def receive_seed_data(data: BPMReading, background_tasks: BackgroundTasks):
