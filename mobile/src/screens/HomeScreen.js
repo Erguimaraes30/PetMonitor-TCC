@@ -16,8 +16,7 @@ const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 80;
 const MAX_POINTS = 30;
 const API_URL = 'https://petmonitor-tcc.onrender.com';
-const PET_ID = 'pet_001';
-const POLL_INTERVAL = 10000; // 10 segundos
+const POLL_INTERVAL = 5000; // 5 segundos
 
 function getStatus(bpm, min, max) {
   if (bpm <= 0) return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
@@ -54,39 +53,38 @@ export default function HomeScreen({ navigation }) {
   const [bpm, setBpm] = useState(0);
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(0));
   const [lastUpdate, setLastUpdate] = useState('--');
+  const [ir, setIr] = useState(0);
+  const [feedStatus, setFeedStatus] = useState('sem dados');
   const [harnessStatus, setHarnessStatus] = useState('offline');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
   const mediaRef = useRef(0);
-  const lastTimestampRef = useRef(null);
 
   const fetchLatestBpm = useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=30&_=${Date.now()}`);
+      const response = await fetch(`${API_URL}/petmonitor/latest?_=${Date.now()}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
+      if (data.error) throw new Error(data.message || 'Erro ao buscar dados');
 
-      const lista = data.dados || [];
-      if (lista.length > 0) {
-        const latest = lista[0];
-        if (latest.timestamp !== lastTimestampRef.current) {
-          lastTimestampRef.current = latest.timestamp;
-          const bpmValues = lista.slice(0, MAX_POINTS).map(d => d.bpm).reverse();
-          while (bpmValues.length < MAX_POINTS) bpmValues.unshift(bpmValues[0] || 0);
+      const latestBpm = Number(data.bpm) || 0;
 
-          setBpm(latest.bpm);
-          setHistory([...bpmValues]);
-          setHarnessStatus(latest.status_coleira || 'online');
-          const date = new Date(latest.timestamp);
-          setLastUpdate(date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-          mediaRef.current = Math.round(bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length);
-          setError(null);
-        }
-      }
+      setBpm(latestBpm);
+      setIr(Number(data.ir) || 0);
+      setFeedStatus(data.status || 'sem dados');
+      setHarnessStatus(data.status ? 'online' : 'offline');
+      setHistory((currentHistory) => {
+        const nextHistory = [...currentHistory.slice(1), latestBpm];
+        mediaRef.current = Math.round(nextHistory.reduce((a, b) => a + b, 0) / nextHistory.length);
+        return nextHistory;
+      });
+      setLastUpdate(data.updated_at ? new Date(data.updated_at).toLocaleString('pt-BR') : '--');
+      setError(null);
       setLoading(false);
     } catch (err) {
-      setError('Sem conexão');
+      setError('erro de conexão');
+      setFeedStatus('erro de conexão');
       setHarnessStatus('offline');
       setLoading(false);
     }
@@ -134,7 +132,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.statusRow}>
             <View>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS GLOBAL</Text>
-              <Text style={[styles.statusValue, { color: status.color }]}>{loading ? '...' : status.label}</Text>
+              <Text style={[styles.statusValue, { color: error ? colors.error : status.color }]}>{loading ? '...' : feedStatus}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINCRONIZADO</Text>
@@ -142,6 +140,13 @@ export default function HomeScreen({ navigation }) {
               <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{lastUpdate}</Text>
             </View>
           </View>
+        </View>
+
+        {/* SINAL INFRAVERMELHO */}
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINAL INFRAVERMELHO</Text>
+          <Text style={[styles.irValue, { color: colors.textPrimary }]}>{loading ? '--' : ir}</Text>
+          <Text style={[styles.cardSubValueLeft, { color: colors.textSecondary }]}>Feed IR do Adafruit IO</Text>
         </View>
 
         {/* FREQUENCIA CARDIACA */}
@@ -211,6 +216,8 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', justifyContent: 'space-between' },
   statusValue: { fontSize: 22, fontWeight: 'bold', marginTop: 4 },
   cardSubValue: { fontSize: 12, textAlign: 'right' },
+  cardSubValueLeft: { fontSize: 12, marginTop: 4 },
+  irValue: { fontSize: 34, fontWeight: 'bold', marginTop: 6 },
   bpmRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   bpmValueRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 },
   bpmNumber: { fontSize: 52, fontWeight: 'bold' },
