@@ -44,8 +44,19 @@ function MiniGraph({ data, strokeColor }) {
   );
 }
 
+function translateFeedStatus(t, value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return t('semDados');
+  if (normalized === 'sem dados') return t('semDados');
+  if (normalized === 'erro de conexão' || normalized === 'erro de conexao') return t('erroConexao');
+  if (normalized === 'normal') return t('normal');
+  if (normalized === 'alerta') return t('alerta');
+  if (normalized === 'atencao' || normalized === 'atenção') return t('atencao');
+  return value;
+}
+
 export default function HomeScreen({ navigation }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { petData, alertSettings } = useContext(DataContext);
   const { dark, colors } = useTheme();
   const isFocused = useIsFocused();
@@ -54,7 +65,7 @@ export default function HomeScreen({ navigation }) {
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(0));
   const [lastUpdate, setLastUpdate] = useState('--');
   const [ir, setIr] = useState(0);
-  const [feedStatus, setFeedStatus] = useState('sem dados');
+  const [feedStatus, setFeedStatus] = useState('');
   const [harnessStatus, setHarnessStatus] = useState('offline');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,20 +77,20 @@ export default function HomeScreen({ navigation }) {
       const response = await fetch(`${API_URL}/petmonitor/latest?_=${Date.now()}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      if (data.error) throw new Error(data.message || 'Erro ao buscar dados');
+      if (data.error) throw new Error(data.message || t('erroBuscarDados'));
 
       const latestBpm = Number(data.bpm) || 0;
 
       setBpm(latestBpm);
       setIr(Number(data.ir) || 0);
-      setFeedStatus(data.status || 'sem dados');
+      setFeedStatus(data.status || '');
       setHarnessStatus(data.status ? 'online' : 'offline');
       setHistory((currentHistory) => {
         const nextHistory = [...currentHistory.slice(1), latestBpm];
         mediaRef.current = Math.round(nextHistory.reduce((a, b) => a + b, 0) / nextHistory.length);
         return nextHistory;
       });
-      setLastUpdate(data.updated_at ? new Date(data.updated_at).toLocaleString('pt-BR') : '--');
+      setLastUpdate(data.updated_at ? new Date(data.updated_at).toLocaleString(i18n.language === 'en' ? 'en-US' : 'pt-BR') : '--');
       setError(null);
       setLoading(false);
     } catch (err) {
@@ -88,7 +99,7 @@ export default function HomeScreen({ navigation }) {
       setHarnessStatus('offline');
       setLoading(false);
     }
-  }, []);
+  }, [i18n.language, t]);
 
   useEffect(() => {
     if (!isFocused) return undefined;
@@ -100,7 +111,8 @@ export default function HomeScreen({ navigation }) {
 
   const status = getStatus(bpm, alertSettings.bpmMin, alertSettings.bpmMax);
   const diff = bpm - mediaRef.current;
-  const diffText = diff > 0 ? `+${diff} BPM ACIMA DA MÉDIA` : `${diff} BPM ABAIXO DA MÉDIA`;
+  const diffText = diff > 0 ? `+${diff} ${t('acimaDaMedia')}` : `${diff} ${t('abaixoDaMedia')}`;
+  const displayedFeedStatus = translateFeedStatus(t, feedStatus);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -117,7 +129,9 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.headerRight}>
           <View style={[styles.harnessbadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={[styles.harnessOnlineDot, { backgroundColor: harnessStatus === 'online' ? colors.success : colors.error }]} />
-            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>Harness: {harnessStatus === 'online' ? 'Online' : 'Offline'}</Text>
+            <Text style={[styles.harnessText, { color: colors.textSecondary }]}>
+              {t('harness')}: {harnessStatus === 'online' ? t('online') : t('offline')}
+            </Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
             <Feather name="settings" size={22} color={colors.textSecondary} />
@@ -131,12 +145,12 @@ export default function HomeScreen({ navigation }) {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statusRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>STATUS GLOBAL</Text>
-              <Text style={[styles.statusValue, { color: error ? colors.error : status.color }]}>{loading ? '...' : feedStatus}</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusGlobal')}</Text>
+              <Text style={[styles.statusValue, { color: error ? colors.error : status.color }]}>{loading ? '...' : displayedFeedStatus}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINCRONIZADO</Text>
-              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>Última atualização:</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('sincronizado')}</Text>
+              <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{t('ultimaAtualizacao')}</Text>
               <Text style={[styles.cardSubValue, { color: colors.textSecondary }]}>{lastUpdate}</Text>
             </View>
           </View>
@@ -144,16 +158,16 @@ export default function HomeScreen({ navigation }) {
 
         {/* SINAL INFRAVERMELHO */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>SINAL INFRAVERMELHO</Text>
+          <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('sinalInfravermelho')}</Text>
           <Text style={[styles.irValue, { color: colors.textPrimary }]}>{loading ? '--' : ir}</Text>
-          <Text style={[styles.cardSubValueLeft, { color: colors.textSecondary }]}>Feed IR do Adafruit IO</Text>
+          <Text style={[styles.cardSubValueLeft, { color: colors.textSecondary }]}>{t('feedIrAdafruit')}</Text>
         </View>
 
         {/* FREQUENCIA CARDIACA */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.bpmRow}>
             <View>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>FREQUÊNCIA CARDÍACA</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('frequenciaCardiaca')}</Text>
               <View style={styles.bpmValueRow}>
                 <Text style={[styles.bpmNumber, { color: colors.textPrimary }]}>{loading ? '--' : bpm}</Text>
                 <Text style={[styles.bpmUnit, { color: colors.textSecondary }]}> BPM</Text>
@@ -165,8 +179,8 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.graphContainer}>
             <MiniGraph data={history} strokeColor={colors.primary} />
             <View style={styles.graphLabels}>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>-30 MIN</Text>
-              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>AGORA</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{t('trintaMin')}</Text>
+              <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{t('agora').toUpperCase()}</Text>
             </View>
           </View>
         </View>
@@ -177,20 +191,20 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Historico')}
         >
           <Feather name="clock" size={18} color={colors.primary} style={{ marginRight: 10 }} />
-          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>Ver Histórico Detalhado</Text>
+          <Text style={[styles.historyButtonText, { color: colors.textPrimary }]}>{t('verHistorico')}</Text>
           <Feather name="chevron-right" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
         {/* IA ENGINE - REINTEGRADO AQUI */}
         <View style={[styles.iaCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.iaBadge, { backgroundColor: colors.primary + '22' }]}>
-            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>IA ENGINE</Text>
+            <Text style={[styles.iaBadgeText, { color: colors.primary }]}>{t('iaEngine')}</Text>
           </View>
           <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('ResumoDetalhado')}>
-            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>ATIVIDADE</Text>
-            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>Resumo Detalhado</Text>
+            <Text style={[styles.iaTitle, { color: colors.textPrimary }]}>{t('atividadeInferida')}</Text>
+            <Text style={[styles.iaSubtitle, { color: colors.textSecondary }]}>{t('resumoDetalhado')}</Text>
             <Text style={[styles.iaBody, { color: colors.textSecondary }]}>
-              Baseado nos batimentos cardíacos do seu pet, aqui está um resumo detalhado de como foi o mês do seu animalzinho.
+              {t('resumoBody')}
             </Text>
           </TouchableOpacity>
         </View>

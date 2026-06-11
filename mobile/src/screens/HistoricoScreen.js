@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, Dimensions, ActivityIndicator
@@ -40,13 +40,32 @@ function LineGraph({ data, strokeColor }) {
 
 function statusConfig(bpm, min, max, successColor, t) {
   if (bpm <= 0) return { color: successColor, label: t('normal'), icon: 'heart' };
+  if (bpm < min) return { color: '#64B5F6', label: t('bradicardia'), icon: 'trending-down' };
   if (bpm > max) return { color: '#E57373', label: t('alerta'), icon: 'alert-triangle' };
   if (bpm > (max * 0.85)) return { color: '#FFB74D', label: t('elevado'), icon: 'trending-up' };
   return { color: successColor, label: t('normal'), icon: 'heart' };
 }
 
+function periodConfig(filter) {
+  if (filter === 'trintaDias') return { days: 30, limit: 300 };
+  if (filter === 'seteDias') return { days: 7, limit: 150 };
+  return { days: 1, limit: 80 };
+}
+
+function filterHistoryByPeriod(data, filter) {
+  const { days } = periodConfig(filter);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  if (days > 1) start.setDate(start.getDate() - (days - 1));
+
+  return data.filter((item) => {
+    if (!item.timestamp) return false;
+    return new Date(item.timestamp) >= start;
+  });
+}
+
 export default function HistoricoScreen({ navigation }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { dark, colors } = useTheme();
   const isFocused = useIsFocused();
   const { alertSettings } = useContext(DataContext);
@@ -55,57 +74,61 @@ export default function HistoricoScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // Para feedback visual no refresh manual
   const [historyData, setHistoryData] = useState([]);
+  const [error, setError] = useState(null);
 
   // BUSCA REAL DOS DADOS
   const fetchHistory = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=20&_=${Date.now()}`);
+      const { limit } = periodConfig(filter);
+      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=${limit}&_=${Date.now()}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       
       if (data.dados) {
         // Garantimos que os dados estão ordenados por tempo (mais antigo para mais novo para o gráfico)
-        const sortedData = data.dados.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const sortedData = filterHistoryByPeriod(data.dados, filter)
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         setHistoryData(sortedData);
       }
+      setError(null);
     } catch (err) {
-      console.error("Erro ao buscar histórico:", err);
+      setError(t('semConexaoServidor'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [filter, t]);
 
-  // Lógica de Polling (Atualização automática)
   useEffect(() => {
     if (!isFocused) return undefined;
 
-    // Busca inicial imediata
-    if (filter === 'hoje') {
-      fetchHistory(true);
+    fetchHistory(true);
 
-      // Define um intervalo para atualizar a cada 10 segundos enquanto estiver nesta tela
+    if (filter === 'hoje') {
       const interval = setInterval(() => {
-        fetchHistory(false); // false para não mostrar o spinner de loading toda hora
+        fetchHistory(false);
       }, 10000);
 
-      return () => clearInterval(interval); // Limpa o intervalo ao sair da tela
-    } else {
-      setHistoryData([]);
-      setLoading(false);
+      return () => clearInterval(interval);
     }
+
+    return undefined;
   }, [filter, fetchHistory, isFocused]);
 
-  const hasData = historyData.length > 0 && filter === 'hoje';
+  const hasData = historyData.length > 0;
 
   const renderHora = (timestamp) => {
     if (!timestamp) return '--:--';
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR';
+    if (filter === 'hoje') return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
   };
 
   const media = hasData ? Math.round(historyData.reduce((a, b) => a + b.bpm, 0) / historyData.length) : 0;
   const max = hasData ? Math.max(...historyData.map(d => d.bpm)) : 0;
+  const min = hasData ? Math.min(...historyData.map(d => d.bpm)) : 0;
 
   // Para a lista "Leituras Recentes", queremos do mais novo para o mais antigo
   const recentLeituras = [...historyData].reverse();
@@ -153,7 +176,19 @@ export default function HistoricoScreen({ navigation }) {
             <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{loading ? '...' : max}</Text>
             <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('minimo').toUpperCase()}</Text>
+            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{loading ? '...' : min}</Text>
+            <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
+          </View>
         </View>
+
+        {error && (
+          <View style={[styles.errorBox, { borderColor: colors.error, backgroundColor: colors.error + '12' }]}>
+            <Feather name="wifi-off" size={14} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
 
         {/* GRÁFICO */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -166,13 +201,13 @@ export default function HistoricoScreen({ navigation }) {
               <LineGraph data={historyData} strokeColor={colors.primary} />
               <View style={styles.graphLabels}>
                 <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{renderHora(historyData[0]?.timestamp)}</Text>
-                <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>AGORA</Text>
+                <Text style={[styles.graphLabel, { color: colors.textSecondary }]}>{t('agora').toUpperCase()}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Feather name="bar-chart" size={32} color={colors.border} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Sem registros para este período</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('semRegistrosPeriodo')}</Text>
             </View>
           )}
         </View>
@@ -203,7 +238,7 @@ export default function HistoricoScreen({ navigation }) {
               );
             }) : (
               <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhuma leitura encontrada.</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('nenhumaLeitura')}</Text>
               </View>
             )}
           </View>
@@ -224,10 +259,12 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 13, fontWeight: '500' },
   scroll: { padding: 20, gap: 12, paddingBottom: 30 },
   summaryRow: { flexDirection: 'row', gap: 10 },
-  summaryCard: { flex: 1, borderRadius: 16, padding: 14, alignItems: 'center', borderWidth: 1 },
-  summaryLabel: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
-  summaryValue: { fontSize: 28, fontWeight: 'bold' },
+  summaryCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', borderWidth: 1 },
+  summaryLabel: { fontSize: 9, fontWeight: 'bold', letterSpacing: 0.5, marginBottom: 4 },
+  summaryValue: { fontSize: 24, fontWeight: 'bold' },
   summaryUnit: { fontSize: 11, marginTop: 2 },
+  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, padding: 12 },
+  errorText: { fontSize: 13, fontWeight: '600' },
   card: { borderRadius: 16, padding: 16, borderWidth: 1 },
   cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
   graphContainer: { marginTop: 12 },

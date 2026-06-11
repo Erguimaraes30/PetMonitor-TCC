@@ -242,16 +242,17 @@ async def get_pet_history_route(pet_id: str, limit: int = 30):
     return {"pet_id": pet_id, "dados": history}
 
 @app.get("/monitor/analysis/{pet_id}")
-async def get_pet_analysis(pet_id: str, limit: int = 50):
+async def get_pet_analysis(pet_id: str, limit: int = 50, lang: str = "pt"):
     history = get_pet_history(pet_id, limit)
     if not history:
         raise HTTPException(status_code=404, detail="Sem dados para análise")
     
-    analysis = analyze_bpm_history(history)
+    report = analyze_bpm_history(history, lang)
     
     return {
         "pet_id": pet_id,
-        "analise_ia": analysis,
+        "analise_ia": report.get("analysis", ""),
+        "relatorio": report,
         "status": "sucesso"
     }
 
