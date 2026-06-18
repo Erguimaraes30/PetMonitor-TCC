@@ -336,6 +336,11 @@ async def test_email_alert_route(pet_id: str):
             "smtp_from_configured": bool(os.getenv("SMTP_FROM") or os.getenv("SMTP_USER")),
             "smtp_user_configured": bool(os.getenv("SMTP_USER")),
             "smtp_password_configured": bool(os.getenv("SMTP_PASSWORD")),
+            "smtp_ssl": os.getenv("SMTP_SSL", "false").lower() == "true",
+            "resend_api_key_configured": bool(os.getenv("RESEND_API_KEY")),
+            "resend_from_configured": bool(
+                os.getenv("RESEND_FROM") or os.getenv("SMTP_FROM") or os.getenv("SMTP_USER")
+            ),
         },
     }
 
