@@ -81,6 +81,24 @@ def get_feed_last_value(feed_key):
     }
 
 
+def build_alert_ai_report(pet_id: str, bpm: int):
+    history = get_pet_history(pet_id, 50)
+    history_for_analysis = [{"bpm": bpm, "timestamp": datetime.now().isoformat()}] + history
+    return analyze_bpm_history(history_for_analysis, "pt")
+
+
+def send_alert_email_with_ai(pet_id: str, alert_type: str, bpm: int, message: str, email_settings: dict):
+    ai_report = build_alert_ai_report(pet_id, bpm)
+    return send_alert_email(
+        pet_id,
+        alert_type,
+        bpm,
+        message,
+        email_settings,
+        ai_report,
+    )
+
+
 def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = None) -> bool:
     limits = get_alert_limits(pet_id)
     state = get_alert_state(pet_id)
@@ -88,12 +106,12 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
 
     if bpm > limits["bpm_max"]:
         message = f"BPM acima do limite: {bpm} > {limits['bpm_max']}"
-        save_alert(pet_id, "BPM_ALTO", bpm, message)
         if active_type != "BPM_ALTO":
+            save_alert(pet_id, "BPM_ALTO", bpm, message)
             email_settings = get_email_settings(pet_id)
             if background_tasks:
                 background_tasks.add_task(
-                    send_alert_email,
+                    send_alert_email_with_ai,
                     pet_id,
                     "BPM_ALTO",
                     bpm,
@@ -102,7 +120,7 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
                 )
                 print(f"📨 E-mail de taquicardia enfileirado para {pet_id}")
             else:
-                send_alert_email(pet_id, "BPM_ALTO", bpm, message, email_settings)
+                send_alert_email_with_ai(pet_id, "BPM_ALTO", bpm, message, email_settings)
         else:
             print(f"ℹ️  Alerta BPM_ALTO já ativo para {pet_id}; sem novo e-mail")
         set_alert_state(pet_id, "BPM_ALTO")
@@ -110,12 +128,12 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
 
     if bpm < limits["bpm_min"]:
         message = f"BPM abaixo do limite: {bpm} < {limits['bpm_min']}"
-        save_alert(pet_id, "BPM_BAIXO", bpm, message)
         if active_type != "BPM_BAIXO":
+            save_alert(pet_id, "BPM_BAIXO", bpm, message)
             email_settings = get_email_settings(pet_id)
             if background_tasks:
                 background_tasks.add_task(
-                    send_alert_email,
+                    send_alert_email_with_ai,
                     pet_id,
                     "BPM_BAIXO",
                     bpm,
@@ -124,7 +142,7 @@ def check_bpm_alert(pet_id: str, bpm: int, background_tasks: BackgroundTasks = N
                 )
                 print(f"📨 E-mail de bradicardia enfileirado para {pet_id}")
             else:
-                send_alert_email(pet_id, "BPM_BAIXO", bpm, message, email_settings)
+                send_alert_email_with_ai(pet_id, "BPM_BAIXO", bpm, message, email_settings)
         else:
             print(f"ℹ️  Alerta BPM_BAIXO já ativo para {pet_id}; sem novo e-mail")
         set_alert_state(pet_id, "BPM_BAIXO")
@@ -156,7 +174,7 @@ async def health():
 
 
 @app.get("/petmonitor/latest")
-async def petmonitor_latest():
+async def petmonitor_latest(background_tasks: BackgroundTasks):
     if not ADAFRUIT_USERNAME or not ADAFRUIT_IO_KEY:
         return {
             "error": True,
@@ -184,6 +202,10 @@ async def petmonitor_latest():
         "updated_at": max(updated_at_values) if updated_at_values else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "source": "adafruit_io",
     }
+
+    if response["bpm"] > 0:
+        background_tasks.add_task(save_bpm, "pet_001", response["bpm"], "online")
+        response["alerta_disparado"] = check_bpm_alert("pet_001", response["bpm"], background_tasks)
 
     if errors:
         response["error"] = True
@@ -280,6 +302,42 @@ async def update_email_alert_settings_route(pet_id: str, settings: EmailAlertSet
         raise HTTPException(status_code=500, detail="Erro ao salvar configuração de e-mail")
 
     return {"status": "sucesso", "pet_id": pet_id, "enabled": settings.enabled}
+
+
+@app.post("/settings/email-alerts/test/{pet_id}")
+async def test_email_alert_route(pet_id: str):
+    email_settings = get_email_settings(pet_id)
+    if not email_settings.get("enabled"):
+        return {
+            "sent": False,
+            "reason": "Alertas por e-mail estao desativados para este pet.",
+            "settings": {
+                "enabled": False,
+                "has_tutor_email": bool(email_settings.get("tutor_email")),
+                "has_vet_email": bool(email_settings.get("vet_email")),
+            },
+        }
+
+    sent = send_alert_email_with_ai(
+        pet_id,
+        "BPM_ALTO",
+        get_alert_limits(pet_id).get("bpm_max", 140) + 10,
+        "Teste de envio de alerta por e-mail.",
+        email_settings,
+    )
+
+    return {
+        "sent": sent,
+        "settings": {
+            "enabled": bool(email_settings.get("enabled")),
+            "has_tutor_email": bool(email_settings.get("tutor_email")),
+            "has_vet_email": bool(email_settings.get("vet_email")),
+            "smtp_host_configured": bool(os.getenv("SMTP_HOST")),
+            "smtp_from_configured": bool(os.getenv("SMTP_FROM") or os.getenv("SMTP_USER")),
+            "smtp_user_configured": bool(os.getenv("SMTP_USER")),
+            "smtp_password_configured": bool(os.getenv("SMTP_PASSWORD")),
+        },
+    }
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

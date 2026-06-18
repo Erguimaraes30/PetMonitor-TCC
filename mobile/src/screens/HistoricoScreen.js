@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
-  TouchableOpacity, Dimensions, ActivityIndicator
+  TouchableOpacity, Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
@@ -14,9 +14,6 @@ import { DataContext } from '../context/DataContext';
 const { width } = Dimensions.get('window');
 const GRAPH_WIDTH = width - 48;
 const GRAPH_HEIGHT = 100;
-const API_URL = 'https://petmonitor-tcc.onrender.com';
-const PET_ID = 'pet_001';
-
 // Componente de Gráfico (Ajustado para renderizar da esquerda para a direita)
 function LineGraph({ data, strokeColor }) {
   if (!data || data.length < 2) return null;
@@ -47,9 +44,9 @@ function statusConfig(bpm, min, max, successColor, t) {
 }
 
 function periodConfig(filter) {
-  if (filter === 'trintaDias') return { days: 30, limit: 300 };
-  if (filter === 'seteDias') return { days: 7, limit: 150 };
-  return { days: 1, limit: 80 };
+  if (filter === 'trintaDias') return { days: 30 };
+  if (filter === 'seteDias') return { days: 7 };
+  return { days: 1 };
 }
 
 function filterHistoryByPeriod(data, filter) {
@@ -68,53 +65,22 @@ export default function HistoricoScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { dark, colors } = useTheme();
   const isFocused = useIsFocused();
-  const { alertSettings } = useContext(DataContext);
+  const { alertSettings, bpmReadings = [] } = useContext(DataContext);
   
   const [filter, setFilter] = useState('hoje');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // Para feedback visual no refresh manual
-  const [historyData, setHistoryData] = useState([]);
-  const [error, setError] = useState(null);
-
-  // BUSCA REAL DOS DADOS
-  const fetchHistory = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    try {
-      const { limit } = periodConfig(filter);
-      const response = await fetch(`${API_URL}/monitor/history/${PET_ID}?limit=${limit}&_=${Date.now()}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      
-      if (data.dados) {
-        // Garantimos que os dados estão ordenados por tempo (mais antigo para mais novo para o gráfico)
-        const sortedData = filterHistoryByPeriod(data.dados, filter)
-          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        setHistoryData(sortedData);
-      }
-      setError(null);
-    } catch (err) {
-      setError(t('semConexaoServidor'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [filter, t]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!isFocused) return undefined;
 
-    fetchHistory(true);
-
-    if (filter === 'hoje') {
-      const interval = setInterval(() => {
-        fetchHistory(false);
-      }, 10000);
-
-      return () => clearInterval(interval);
-    }
-
+    setRefreshing(false);
     return undefined;
-  }, [filter, fetchHistory, isFocused]);
+  }, [bpmReadings, filter, isFocused]);
+
+  const historyData = useMemo(() => (
+    filterHistoryByPeriod(bpmReadings, filter)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+  ), [bpmReadings, filter]);
 
   const hasData = historyData.length > 0;
 
@@ -139,7 +105,7 @@ export default function HistoricoScreen({ navigation }) {
 
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('historico').toUpperCase()}</Text>
-        <TouchableOpacity onPress={() => { setRefreshing(true); fetchHistory(true); }}>
+        <TouchableOpacity onPress={() => setRefreshing(false)}>
           <Feather name="refresh-cw" size={20} color={colors.primary} style={refreshing && {opacity: 0.5}} />
         </TouchableOpacity>
       </View>
@@ -168,34 +134,25 @@ export default function HistoricoScreen({ navigation }) {
         <View style={styles.summaryRow}>
           <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('media').toUpperCase()}</Text>
-            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{loading ? '...' : media}</Text>
+            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{media}</Text>
             <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('maximo').toUpperCase()}</Text>
-            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{loading ? '...' : max}</Text>
+            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{max}</Text>
             <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('minimo').toUpperCase()}</Text>
-            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{loading ? '...' : min}</Text>
+            <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{min}</Text>
             <Text style={[styles.summaryUnit, { color: colors.textSecondary }]}>BPM</Text>
           </View>
         </View>
 
-        {error && (
-          <View style={[styles.errorBox, { borderColor: colors.error, backgroundColor: colors.error + '12' }]}>
-            <Feather name="wifi-off" size={14} color={colors.error} />
-            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
-          </View>
-        )}
-
         {/* GRÁFICO */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('graficoPeriodo').toUpperCase()}</Text>
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
-          ) : hasData ? (
+          {hasData ? (
             <View style={styles.graphContainer}>
               {/* O histórico agora já vem ordenado do antigo -> novo para o LineGraph */}
               <LineGraph data={historyData} strokeColor={colors.primary} />
@@ -216,9 +173,7 @@ export default function HistoricoScreen({ navigation }) {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('leiturasRecentes').toUpperCase()}</Text>
           <View style={{ marginTop: 12 }}>
-            {loading ? (
-               <ActivityIndicator size="small" color={colors.primary} />
-            ) : hasData ? recentLeituras.map((item, index) => {
+            {hasData ? recentLeituras.map((item, index) => {
               const s = statusConfig(item.bpm, alertSettings.bpmMin, alertSettings.bpmMax, colors.success, t);
               return (
                 <View key={index} style={[styles.readingItem, index < recentLeituras.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
@@ -263,8 +218,6 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 9, fontWeight: 'bold', letterSpacing: 0.5, marginBottom: 4 },
   summaryValue: { fontSize: 24, fontWeight: 'bold' },
   summaryUnit: { fontSize: 11, marginTop: 2 },
-  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, padding: 12 },
-  errorText: { fontSize: 13, fontWeight: '600' },
   card: { borderRadius: 16, padding: 16, borderWidth: 1 },
   cardLabel: { fontSize: 11, fontWeight: 'bold', letterSpacing: 1 },
   graphContainer: { marginTop: 12 },

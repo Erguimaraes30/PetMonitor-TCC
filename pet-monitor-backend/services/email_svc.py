@@ -1,7 +1,7 @@
 import os
 import smtplib
 from email.message import EmailMessage
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 def _recipients(settings: Dict) -> List[str]:
@@ -9,13 +9,47 @@ def _recipients(settings: Dict) -> List[str]:
     return sorted({email.strip() for email in emails if email and email.strip()})
 
 
-def send_alert_email(pet_id: str, alert_type: str, bpm: int, message: str, settings: Dict) -> bool:
+def _alert_label(alert_type: str) -> str:
+    return "Taquicardia" if alert_type == "BPM_ALTO" else "Bradicardia"
+
+
+def _ai_section(ai_report: Optional[Dict]) -> str:
+    if not ai_report:
+        return ""
+
+    lines = []
+    summary = ai_report.get("summary")
+    analysis = ai_report.get("analysis")
+    recommendation = ai_report.get("recommendation")
+
+    if summary:
+        lines.append(f"Resumo da IA: {summary}")
+    if analysis:
+        lines.append(f"Analise: {analysis}")
+    if recommendation:
+        lines.append(f"Recomendacao: {recommendation}")
+
+    if not lines:
+        return ""
+
+    return "\n\nInterpretacao inteligente:\n" + "\n".join(lines)
+
+
+def send_alert_email(
+    pet_id: str,
+    alert_type: str,
+    bpm: int,
+    message: str,
+    settings: Dict,
+    ai_report: Optional[Dict] = None,
+) -> bool:
     if not settings.get("enabled"):
+        print(f"E-mail de alerta desativado para {pet_id}.")
         return False
 
     recipients = _recipients(settings)
     if not recipients:
-        print("⚠️  Alertas por e-mail ativados, mas nenhum destinatário foi configurado.")
+        print("Alertas por e-mail ativados, mas nenhum destinatario foi configurado.")
         return False
 
     smtp_host = os.getenv("SMTP_HOST")
@@ -26,23 +60,30 @@ def send_alert_email(pet_id: str, alert_type: str, bpm: int, message: str, setti
     use_tls = os.getenv("SMTP_TLS", "true").lower() != "false"
 
     if not smtp_host or not smtp_from:
-        print("⚠️  SMTP_HOST/SMTP_FROM não configurados. E-mail de alerta não enviado.")
+        print("SMTP_HOST/SMTP_FROM nao configurados. E-mail de alerta nao enviado.")
         return False
 
     pet_name = settings.get("pet_nome") or pet_id
-    subject_type = "Taquicardia" if alert_type == "BPM_ALTO" else "Bradicardia"
+    tutor_name = settings.get("tutor_nome") or "Tutor"
+    vet_name = settings.get("vet_nome") or "Veterinario"
+    subject_type = _alert_label(alert_type)
+    ai_text = _ai_section(ai_report)
 
     email = EmailMessage()
     email["Subject"] = f"Alerta PetMonitor: {subject_type} em {pet_name}"
     email["From"] = smtp_from
     email["To"] = ", ".join(recipients)
     email.set_content(
-        f"Alerta de saúde detectado pelo PetMonitor.\n\n"
+        f"Ola, {tutor_name}.\n\n"
+        f"O PetMonitor detectou um alerta de saude em {pet_name}.\n\n"
         f"Pet: {pet_name}\n"
         f"BPM registrado: {bpm}\n"
         f"Tipo: {subject_type}\n"
-        f"Mensagem: {message}\n\n"
-        f"Verifique o app para acompanhar o histórico e os alertas recentes."
+        f"Mensagem: {message}\n"
+        f"Veterinario cadastrado: {vet_name}"
+        f"{ai_text}\n\n"
+        f"Este e-mail e um apoio de monitoramento e nao substitui avaliacao veterinaria.\n"
+        f"Verifique o app para acompanhar o historico e os alertas recentes."
     )
 
     try:
@@ -52,8 +93,8 @@ def send_alert_email(pet_id: str, alert_type: str, bpm: int, message: str, setti
             if smtp_user and smtp_password:
                 server.login(smtp_user, smtp_password)
             server.send_message(email)
-        print(f"✅ E-mail de alerta enviado para {', '.join(recipients)}")
+        print(f"E-mail de alerta enviado para {', '.join(recipients)}")
         return True
-    except Exception as e:
-        print(f"❌ Erro ao enviar e-mail de alerta: {e}")
+    except Exception as exc:
+        print(f"Erro ao enviar e-mail de alerta: {exc}")
         return False

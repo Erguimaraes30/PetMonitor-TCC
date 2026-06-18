@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useContext, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, StatusBar, ScrollView,
   TouchableOpacity, ActivityIndicator
@@ -38,28 +38,39 @@ function tipoConfig(tipo, t) {
   }
 }
 
+function alertaDescricao(alerta, t) {
+  const tipoUpper = alerta?.tipo?.toUpperCase();
+  if (tipoUpper === 'TAQUICARDIA') return t('bpmAcimaLimite');
+  if (tipoUpper === 'BRADICARDIA') return t('bpmAbaixoLimite');
+  return alerta?.mensagem || t('alertaGenerico');
+}
+
 export default function AlertasScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { dark, colors } = useTheme();
   const isFocused = useIsFocused();
   
-  // fetchAlerts deve estar exposto no seu DataContext para podermos chamar aqui
-  const { alerts = [], markAllAsRead, loadingAlerts, fetchAlerts } = useContext(DataContext);
+  const {
+    alerts = [],
+    markAllAsRead,
+    loadingAlerts,
+    fetchAlerts,
+    fetchLatestBpmReading,
+  } = useContext(DataContext);
 
-  // EFEITO DE ATUALIZAÇÃO AUTOMÁTICA (Polling)
   useEffect(() => {
     if (!isFocused) return undefined;
 
-    // Busca imediata ao abrir a tela
+    if (fetchLatestBpmReading) fetchLatestBpmReading().catch(() => {});
     if (fetchAlerts) fetchAlerts();
 
-    // Atualiza a cada 5 segundos para "pegar" o que o script de simulação enviar
     const interval = setInterval(() => {
+      if (fetchLatestBpmReading) fetchLatestBpmReading().catch(() => {});
       if (fetchAlerts) fetchAlerts();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchAlerts, isFocused]);
+  }, [fetchAlerts, fetchLatestBpmReading, isFocused]);
 
   const alertasHoje = useMemo(() => {
     return (alerts || []).filter(a => {
@@ -89,9 +100,10 @@ export default function AlertasScreen({ navigation }) {
             if (markAllAsRead) markAllAsRead();
           }} 
           activeOpacity={0.7}
+          disabled={naoLidos === 0}
           accessibilityLabel={t('marcarTodosLidos')}
         >
-          <Feather name="check-square" size={22} color={colors.textSecondary} />
+          <Feather name="check-square" size={22} color={naoLidos > 0 ? colors.primary : colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -139,12 +151,7 @@ export default function AlertasScreen({ navigation }) {
                     <Text style={[styles.tipoText, { color: config.color }]}>{config.label}</Text>
                   </View>
                   
-                  {alerta.sentToVet ? (
-                    <View style={styles.sentToVet}>
-                      <Feather name="send" size={11} color={colors.success} style={{ marginRight: 4 }} />
-                      <Text style={[styles.sentToVetText, { color: colors.success }]}>{t('enviadoVet')}</Text>
-                    </View>
-                  ) : alerta.lido ? (
+                  {alerta.lido ? (
                     <View style={styles.arquivado}>
                       <Feather name="check-circle" size={11} color={colors.textSecondary} style={{ marginRight: 4 }} />
                       <Text style={[styles.arquivadoText, { color: colors.textSecondary }]}>{t('lido')}</Text>
@@ -152,13 +159,16 @@ export default function AlertasScreen({ navigation }) {
                   ) : (
                     <View style={styles.arquivado}>
                       <Feather name="circle" size={11} color={colors.warning} style={{ marginRight: 4 }} />
-                      <Text style={[styles.arquivadoText, { color: colors.warning }]}>{t('naoLidos')}</Text>
+                      <Text style={[styles.arquivadoText, { color: colors.warning }]}>{t('alertaNaoLido')}</Text>
                     </View>
                   )}
                 </View>
 
                 <Text style={[styles.alertHora, { color: colors.textSecondary }]}>
                   {formatarHoraReal(alerta.timestamp, t, i18n.language)}
+                </Text>
+                <Text style={[styles.alertMessage, { color: colors.textPrimary }]}>
+                  {alertaDescricao(alerta, t)}
                 </Text>
 
                 <View style={styles.alertBottom}>
@@ -219,11 +229,10 @@ const styles = StyleSheet.create({
   alertTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   tipoBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   tipoText: { fontSize: 11, fontWeight: 'bold' },
-  sentToVet: { flexDirection: 'row', alignItems: 'center' },
-  sentToVetText: { fontSize: 11, fontWeight: 'bold' },
   arquivado: { flexDirection: 'row', alignItems: 'center' },
   arquivadoText: { fontSize: 11 },
-  alertHora: { fontSize: 12, marginBottom: 12 },
+  alertHora: { fontSize: 12, marginBottom: 8 },
+  alertMessage: { fontSize: 13, lineHeight: 19, marginBottom: 12 },
   alertLabel: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
   bpmRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   alertBpm: { fontSize: 36, fontWeight: 'bold', lineHeight: 40 },

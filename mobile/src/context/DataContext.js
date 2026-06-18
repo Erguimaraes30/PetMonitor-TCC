@@ -14,10 +14,12 @@ export const DataProvider = ({ children }) => {
   const [vetData, setVetData] = useState({ nome: '', email: '' });
   const [alertSettings, setAlertSettings] = useState({ bpmMin: 60, bpmMax: 140 });
   const [notificationSettings, setNotificationSettings] = useState({ emailAlerts: false, pushAlerts: true });
+  const [bpmReadings, setBpmReadings] = useState([]);
 
   // --- NOVOS ESTADOS PARA A API ---
   const [alerts, setAlerts] = useState([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [activeAlertType, setActiveAlertType] = useState(null);
 
   // 1. Carregar dados locais (AsyncStorage)
   useEffect(() => {
@@ -43,26 +45,10 @@ export const DataProvider = ({ children }) => {
     loadData();
   }, []);
 
-  // --- 2. FUNÇÃO PARA BUSCAR ALERTAS DA API ---
   const fetchAlerts = useCallback(async () => {
-    // Só mostra o loading na primeira vez para não irritar o usuário
-    if (alerts.length === 0) setLoadingAlerts(true); 
-    
-    try {
-      const response = await fetch(`${API_URL}/monitor/alerts/${PET_ID}?_=${Date.now()}`);
-      const data = await response.json();
-      
-      if (data.alertas) {
-        // Ordenar: mais recentes primeiro
-        const sorted = data.alertas.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        setAlerts(sorted);
-      }
-    } catch (err) {
-      console.error("Erro ao buscar alertas da API:", err);
-    } finally {
-      setLoadingAlerts(false);
-    }
-  }, [alerts.length]);
+    setAlerts((currentAlerts) => currentAlerts.filter((alert) => alert.source === 'realtime'));
+    setLoadingAlerts(false);
+  }, []);
 
   // --- 3. FUNÇÃO PARA MARCAR COMO LIDO ---
   const markAllAsRead = async () => {
@@ -71,7 +57,7 @@ export const DataProvider = ({ children }) => {
       const updatedAlerts = alerts.map(a => ({ ...a, lido: true }));
       setAlerts(updatedAlerts);
 
-      await fetch(`${API_URL}/monitor/alerts/read-all/${PET_ID}`, { method: 'POST' });
+      fetch(`${API_URL}/monitor/alerts/read-all/${PET_ID}`, { method: 'POST' }).catch(() => {});
     } catch (err) {
       console.error("Erro ao marcar como lidos:", err);
     }
@@ -88,6 +74,73 @@ export const DataProvider = ({ children }) => {
       });
     }
   };
+
+  const addBpmReading = useCallback((reading) => {
+    const bpm = Number(reading?.bpm) || 0;
+    if (bpm <= 0) return;
+
+    const timestamp = reading?.timestamp || new Date().toISOString();
+    const nextReading = {
+      bpm,
+      timestamp,
+      status_coleira: reading?.status_coleira || 'online',
+      source: reading?.source || 'home',
+    };
+
+    setBpmReadings((current) => {
+      const alreadyExists = current.some((item) => (
+        item.timestamp === nextReading.timestamp && Number(item.bpm) === nextReading.bpm
+      ));
+      if (alreadyExists) return current;
+
+      return [...current, nextReading]
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        .slice(-300);
+    });
+
+    const nextType = bpm > alertSettings.bpmMax
+      ? 'TAQUICARDIA'
+      : bpm < alertSettings.bpmMin
+        ? 'BRADICARDIA'
+        : null;
+
+    setActiveAlertType((currentType) => {
+      if (!nextType) return null;
+      if (currentType === nextType) return currentType;
+
+      const nextAlert = {
+        id: `${timestamp}-${nextType}`,
+        tipo: nextType,
+        bpm,
+        timestamp,
+        lido: false,
+        source: 'realtime',
+        mensagem: nextType === 'TAQUICARDIA'
+          ? `BPM acima do limite: ${bpm} > ${alertSettings.bpmMax}`
+          : `BPM abaixo do limite: ${bpm} < ${alertSettings.bpmMin}`,
+      };
+
+      setAlerts((currentAlerts) => [nextAlert, ...currentAlerts].slice(0, 30));
+      return nextType;
+    });
+  }, [alertSettings.bpmMax, alertSettings.bpmMin]);
+
+  const fetchLatestBpmReading = useCallback(async () => {
+    const response = await fetch(`${API_URL}/petmonitor/latest?_=${Date.now()}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.message || 'Erro ao buscar BPM');
+
+    addBpmReading({
+      bpm: Number(data.bpm) || 0,
+      timestamp: data.updated_at || new Date().toISOString(),
+      status_coleira: data.status ? 'online' : 'offline',
+      source: data.source || 'petmonitor/latest',
+    });
+
+    return data;
+  }, [addBpmReading]);
 
   const updatePetData = async (newData) => {
     const updated = { ...petData, ...newData };
@@ -157,7 +210,10 @@ export const DataProvider = ({ children }) => {
       alerts, 
       loadingAlerts, 
       fetchAlerts, 
-      markAllAsRead
+      markAllAsRead,
+      bpmReadings,
+      addBpmReading,
+      fetchLatestBpmReading
     }}>
       {children}
     </DataContext.Provider>

@@ -19,12 +19,12 @@ const API_URL = 'https://petmonitor-tcc.onrender.com';
 const POLL_INTERVAL = 5000; // 5 segundos
 
 function getStatus(bpm, min, max) {
-  if (bpm <= 0) return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
-  if (bpm < min) return { label: 'BRADICARDIA', color: '#E57373', global: 'ALERTA' };
-  if (bpm > max) return { label: 'TAQUICARDIA', color: '#E57373', global: 'ALERTA' };
+  if (bpm <= 0) return { key: 'semDados', color: '#94A3B8' };
+  if (bpm < min) return { key: 'bradicardia', color: '#E57373' };
+  if (bpm > max) return { key: 'taquicardia', color: '#E57373' };
   const thresholdAtencao = max * 0.85;
-  if (bpm > thresholdAtencao) return { label: 'ELEVADO', color: '#FFB74D', global: 'ATENCAO' };
-  return { label: 'NORMAL', color: '#4ADE80', global: 'NORMAL' };
+  if (bpm > thresholdAtencao) return { key: 'elevado', color: '#FFB74D' };
+  return { key: 'normal', color: '#4ADE80' };
 }
 
 function MiniGraph({ data, strokeColor }) {
@@ -44,20 +44,9 @@ function MiniGraph({ data, strokeColor }) {
   );
 }
 
-function translateFeedStatus(t, value) {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) return t('semDados');
-  if (normalized === 'sem dados') return t('semDados');
-  if (normalized === 'erro de conexão' || normalized === 'erro de conexao') return t('erroConexao');
-  if (normalized === 'normal') return t('normal');
-  if (normalized === 'alerta') return t('alerta');
-  if (normalized === 'atencao' || normalized === 'atenção') return t('atencao');
-  return value;
-}
-
 export default function HomeScreen({ navigation }) {
   const { t, i18n } = useTranslation();
-  const { petData, alertSettings } = useContext(DataContext);
+  const { petData, alertSettings, addBpmReading } = useContext(DataContext);
   const { dark, colors } = useTheme();
   const isFocused = useIsFocused();
 
@@ -65,7 +54,6 @@ export default function HomeScreen({ navigation }) {
   const [history, setHistory] = useState(Array(MAX_POINTS).fill(0));
   const [lastUpdate, setLastUpdate] = useState('--');
   const [ir, setIr] = useState(0);
-  const [feedStatus, setFeedStatus] = useState('');
   const [harnessStatus, setHarnessStatus] = useState('offline');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,8 +71,13 @@ export default function HomeScreen({ navigation }) {
 
       setBpm(latestBpm);
       setIr(Number(data.ir) || 0);
-      setFeedStatus(data.status || '');
-      setHarnessStatus(data.status ? 'online' : 'offline');
+      setHarnessStatus('online');
+      addBpmReading?.({
+        bpm: latestBpm,
+        timestamp: data.updated_at || new Date().toISOString(),
+        status_coleira: data.status ? 'online' : 'offline',
+        source: data.source || 'home',
+      });
       setHistory((currentHistory) => {
         const nextHistory = [...currentHistory.slice(1), latestBpm];
         mediaRef.current = Math.round(nextHistory.reduce((a, b) => a + b, 0) / nextHistory.length);
@@ -95,11 +88,10 @@ export default function HomeScreen({ navigation }) {
       setLoading(false);
     } catch (err) {
       setError('erro de conexão');
-      setFeedStatus('erro de conexão');
       setHarnessStatus('offline');
       setLoading(false);
     }
-  }, [i18n.language, t]);
+  }, [addBpmReading, i18n.language, t]);
 
   useEffect(() => {
     if (!isFocused) return undefined;
@@ -112,7 +104,7 @@ export default function HomeScreen({ navigation }) {
   const status = getStatus(bpm, alertSettings.bpmMin, alertSettings.bpmMax);
   const diff = bpm - mediaRef.current;
   const diffText = diff > 0 ? `+${diff} ${t('acimaDaMedia')}` : `${diff} ${t('abaixoDaMedia')}`;
-  const displayedFeedStatus = translateFeedStatus(t, feedStatus);
+  const displayedGlobalStatus = error ? t('erroConexao') : t(status.key);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -146,7 +138,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.statusRow}>
             <View>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('statusGlobal')}</Text>
-              <Text style={[styles.statusValue, { color: error ? colors.error : status.color }]}>{loading ? '...' : displayedFeedStatus}</Text>
+              <Text style={[styles.statusValue, { color: error ? colors.error : status.color }]}>{loading ? '...' : displayedGlobalStatus}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{t('sincronizado')}</Text>
