@@ -1,0 +1,279 @@
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+#include <Wire.h>
+#include "MAX30105.h"
+#include "heartRate.h"
+
+// =======================
+// CONFIG ESP-NOW
+// =======================
+
+// MAC do seu ESP32 Gateway:
+
+// 70:4B:CA:49:CE:68
+uint8_t gatewayAddress[] = {0x78, 0x1C, 0x3C, 0xDA, 0x77, 0x48};
+
+#define WIFI_CHANNEL 1
+// =======================
+// ESTRUTURA DOS DADOS
+// TEM QUE SER IGUAL NO GATEWAY
+// =======================
+
+typedef struct struct_message {
+  int bpm;
+  long ir;
+  char status[32];
+} struct_message;
+
+struct_message dadosEnviar;
+
+// =======================
+// MAX30102 / ESP32
+// =======================
+
+#define SDA_PIN 21
+#define SCL_PIN 22
+
+MAX30105 particleSensor;
+
+const byte RATE_SIZE = 4;
+byte rates[RATE_SIZE];
+
+byte rateSpot = 0;
+byte rateCount = 0;
+
+long lastBeat = 0;
+
+float beatsPerMinute = 0;
+int beatAvg = 0;
+int ultimoBpmValido = 0;
+
+String statusBPM = "calculando";
+
+unsigned long ultimoPrint = 0;
+const unsigned long intervaloPrint = 1000;
+
+unsigned long ultimoEnvio = 0;
+const unsigned long intervaloEnvio = 5000;
+
+// =======================
+// CALLBACK DE ENVIO
+// CORRIGIDO PARA ESP32 CORE 3.3.10
+// =======================
+
+void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
+  Serial.print("Status envio ESP-NOW: ");
+
+  if (status == ESP_NOW_SEND_SUCCESS) {
+    Serial.println("sucesso");
+  } else {
+    Serial.println("falhou");
+  }
+}
+
+// =======================
+// SETUP
+// =======================
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println();
+  Serial.println("Iniciando ESP32 Sensor...");
+
+  // =======================
+  // INICIALIZA ESP-NOW
+  // =======================
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(false);
+
+  Serial.print("MAC deste ESP32 Sensor: ");
+  Serial.println(WiFi.macAddress());
+
+  Serial.print("Canal ESP-NOW usado: ");
+  Serial.println(WIFI_CHANNEL);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Erro ao inicializar ESP-NOW.");
+
+    while (1) {
+      delay(1000);
+    }
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+
+  esp_now_peer_info_t peerInfo = {};
+  memcpy(peerInfo.peer_addr, gatewayAddress, 6);
+  peerInfo.channel = WIFI_CHANNEL;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Erro ao adicionar Gateway como peer.");
+
+    while (1) {
+      delay(1000);
+    }
+  }
+
+  Serial.println("ESP-NOW pronto.");
+
+  // =======================
+  // INICIALIZA MAX30102
+  // =======================
+
+  Serial.println("Inicializando sensor MAX30102...");
+
+  Wire.begin(SDA_PIN, SCL_PIN);
+
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+    Serial.println("Sensor MAX30105/MAX30102 nao encontrado. Verifique as conexoes!");
+    Serial.println("Ligacao esperada:");
+    Serial.println("VCC/VIN -> 3V3");
+    Serial.println("GND     -> GND");
+    Serial.println("SDA     -> GPIO 21");
+    Serial.println("SCL     -> GPIO 22");
+
+    while (1) {
+      delay(1000);
+    }
+  }
+
+  // Mesma configuração que estava funcionando melhor no seu teste
+  byte ledBrightness = 0x1F;
+  byte sampleAverage = 4;
+  byte ledMode = 2;
+  int sampleRate = 400;
+  int pulseWidth = 411;
+  int adcRange = 4096;
+
+  particleSensor.setup(
+    ledBrightness,
+    sampleAverage,
+    ledMode,
+    sampleRate,
+    pulseWidth,
+    adcRange
+  );
+
+  particleSensor.setPulseAmplitudeRed(0x0A);
+  particleSensor.setPulseAmplitudeIR(0x0A);
+  particleSensor.setPulseAmplitudeGreen(0);
+
+  Serial.println("Sensor pronto.");
+  Serial.println("Coloque o dedo no centro do sensor e fique parado.");
+  Serial.println("---------------------------------------------");
+}
+
+// =======================
+// LOOP
+// =======================
+
+void loop() {
+  long irValue = particleSensor.getIR();
+
+  if (checkForBeat(irValue) == true) {
+    long agora = millis();
+
+    if (lastBeat > 0) {
+      long delta = agora - lastBeat;
+
+      beatsPerMinute = 60 / (delta / 1000.0);
+
+      if (beatsPerMinute < 255 && beatsPerMinute > 20) {
+        rates[rateSpot] = (byte)beatsPerMinute;
+        rateSpot++;
+
+        if (rateSpot >= RATE_SIZE) {
+          rateSpot = 0;
+        }
+
+        if (rateCount < RATE_SIZE) {
+          rateCount++;
+        }
+
+        beatAvg = 0;
+
+        for (byte x = 0; x < rateCount; x++) {
+          beatAvg += rates[x];
+        }
+
+        beatAvg /= rateCount;
+
+        ultimoBpmValido = beatAvg;
+      }
+    }
+
+    lastBeat = agora;
+  }
+
+  statusBPM = calcularStatus(beatAvg);
+
+  if (millis() - ultimoPrint >= intervaloPrint) {
+    ultimoPrint = millis();
+
+    Serial.print("IR: ");
+    Serial.print(irValue);
+
+    Serial.print(" | BPM: ");
+    Serial.print(beatsPerMinute);
+
+    Serial.print(" | BPM Medio: ");
+    Serial.print(beatAvg);
+
+    Serial.print(" | Ultimo valido: ");
+    Serial.print(ultimoBpmValido);
+
+    Serial.print(" | Status: ");
+    Serial.println(statusBPM);
+  }
+
+  if (millis() - ultimoEnvio >= intervaloEnvio) {
+    ultimoEnvio = millis();
+
+    dadosEnviar.bpm = ultimoBpmValido;
+    dadosEnviar.ir = irValue;
+
+    statusBPM.toCharArray(dadosEnviar.status, sizeof(dadosEnviar.status));
+
+    esp_err_t resultado = esp_now_send(
+      gatewayAddress,
+      (uint8_t *) &dadosEnviar,
+      sizeof(dadosEnviar)
+    );
+
+    if (resultado == ESP_OK) {
+      Serial.println("Dados enviados via ESP-NOW.");
+    } else {
+      Serial.println("Erro ao enviar via ESP-NOW.");
+    }
+  }
+
+  delay(10);
+}
+
+// =======================
+// STATUS
+// =======================
+
+String calcularStatus(int bpm) {
+  if (bpm == 0) {
+    return "calculando";
+  } else if (bpm < 60) {
+    return "possivel bradicardia";
+  } else if (bpm <= 100) {
+    return "normal";
+  } else if (bpm <= 160) {
+    return "elevado";
+  } else {
+    return "possivel taquicardia";
+  }
+}
